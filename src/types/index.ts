@@ -17,6 +17,12 @@ export interface HorizonsBody {
   rangeRate: number;
 }
 
+export interface TrajectoryPoint {
+  position: Vec3;
+  velocity: Vec3;
+  date: Date;
+}
+
 /** A single point along the spacecraft trajectory in scene-space coordinates */
 export type ScenePoint = [number, number, number];
 

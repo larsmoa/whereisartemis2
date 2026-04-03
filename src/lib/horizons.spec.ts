@@ -132,9 +132,9 @@ describe("parseSoeBlocks", () => {
   ] as const)("epoch %i has correct x/y/z (±0.5 km)", (idx, x, y, z) => {
     const result = parseSoeBlocks(MULTI_EPOCH_SOE_RESULT);
 
-    expect(result[idx]?.x).toBeCloseTo(x, 0);
-    expect(result[idx]?.y).toBeCloseTo(y, 0);
-    expect(result[idx]?.z).toBeCloseTo(z, 0);
+    expect(result[idx]?.position.x).toBeCloseTo(x, 0);
+    expect(result[idx]?.position.y).toBeCloseTo(y, 0);
+    expect(result[idx]?.position.z).toBeCloseTo(z, 0);
   });
 
   it("throws when no SOE block is present", () => {
@@ -166,7 +166,7 @@ describe("fetchTrajectory", () => {
     vi.unstubAllGlobals();
   });
 
-  it("returns parsed Vec3[] for all epochs", async () => {
+  it("returns parsed TrajectoryPoint[] for all epochs", async () => {
     // Arrange
     const mockFetch = vi.mocked(fetch);
     mockFetch.mockResolvedValue({
@@ -180,7 +180,7 @@ describe("fetchTrajectory", () => {
 
     // Assert
     expect(result).toHaveLength(3);
-    expect(result[0]?.x).toBeCloseTo(-4167.61, 0);
+    expect(result[0]?.position.x).toBeCloseTo(-4167.61, 0);
   });
 
   it("uses STEP_SIZE=1 h in the request URL", async () => {

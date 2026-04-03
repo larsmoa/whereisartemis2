@@ -1,4 +1,4 @@
-import type { HorizonsBody, Vec3 } from "@/types";
+import type { HorizonsBody, Vec3, TrajectoryPoint } from "@/types";
 
 /** ISO string without fractional seconds, as Horizons requires */
 function toHorizonsIso(date: Date): string {
@@ -14,6 +14,9 @@ export const MOON_RADIUS_KM = 1737.4;
 
 /** Earliest available Artemis II ephemeris in JPL Horizons */
 export const LAUNCH_TIME = new Date("2026-04-02T02:00:00Z");
+
+/** Latest available Artemis II ephemeris in JPL Horizons */
+export const SPLASHDOWN_TIME = new Date("2026-04-10T23:55:00Z");
 
 function buildHorizonsUrl(command: string, startTime: string, stopTime: string): string {
   const params = new URLSearchParams({
@@ -97,7 +100,9 @@ export async function fetchArtemisAndMoon(): Promise<{
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
 }> {
+  // Round to nearest minute to ensure cache hits (revalidate is 60s)
   const now = new Date();
+  now.setSeconds(0, 0);
 
   const [spacecraft, moon] = await Promise.all([fetchBody("-1024", now), fetchBody("301", now)]);
 
@@ -115,7 +120,7 @@ export async function fetchArtemisAndMoon(): Promise<{
  *
  * Returns only the position Vec3 for each epoch (velocity omitted for brevity).
  */
-export function parseSoeBlocks(result: string): Vec3[] {
+export function parseSoeBlocks(result: string): TrajectoryPoint[] {
   const soeMatch = result.match(/\$\$SOE([\s\S]*?)\$\$EOE/);
   if (!soeMatch) throw new Error("No SOE block found in Horizons response");
 
@@ -134,15 +139,32 @@ export function parseSoeBlocks(result: string): Vec3[] {
     return parseFloat(captured);
   };
 
-  const positions: Vec3[] = [];
+  const positions: TrajectoryPoint[] = [];
   // Lines cycle in groups of 4: [julian-date, X/Y/Z, VX/VY/VZ, LT/RG/RR]
   for (let i = 0; i < lines.length; i += 4) {
+    const jdLine = lines[i];
     const posLine = lines[i + 1];
-    if (!posLine?.startsWith("X")) continue;
+    const velLine = lines[i + 2];
+    if (!jdLine || !posLine?.startsWith("X") || !velLine) continue;
+
+    const jdMatch = jdLine.match(/^([\d.]+)\s*=/);
+    if (!jdMatch?.[1]) continue;
+
+    const jd = parseFloat(jdMatch[1]);
+    const date = new Date((jd - 2440587.5) * 86400000);
+
     positions.push({
-      x: extractScalar(posLine, "X"),
-      y: extractScalar(posLine, "Y"),
-      z: extractScalar(posLine, "Z"),
+      position: {
+        x: extractScalar(posLine, "X"),
+        y: extractScalar(posLine, "Y"),
+        z: extractScalar(posLine, "Z"),
+      },
+      velocity: {
+        x: extractScalar(velLine, "VX"),
+        y: extractScalar(velLine, "VY"),
+        z: extractScalar(velLine, "VZ"),
+      },
+      date,
     });
   }
 
@@ -162,11 +184,18 @@ export function parseSoeBlocks(result: string): Vec3[] {
 export async function fetchTrajectory(
   command: string,
   start: Date = LAUNCH_TIME,
-  stop: Date = new Date(),
+  stop?: Date,
   stepSize: string = "1h",
-): Promise<Vec3[]> {
-  const startIso = toHorizonsIso(start);
-  const stopIso = toHorizonsIso(stop);
+): Promise<TrajectoryPoint[]> {
+  // Round dates to nearest 5 minutes to ensure cache hits (revalidate is 300s)
+  const effectiveStop = stop ?? new Date();
+  effectiveStop.setMinutes(Math.floor(effectiveStop.getMinutes() / 5) * 5, 0, 0);
+
+  const effectiveStart = new Date(start);
+  effectiveStart.setMinutes(Math.floor(effectiveStart.getMinutes() / 5) * 5, 0, 0);
+
+  const startIso = toHorizonsIso(effectiveStart);
+  const stopIso = toHorizonsIso(effectiveStop);
 
   const params = new URLSearchParams({
     format: "json",

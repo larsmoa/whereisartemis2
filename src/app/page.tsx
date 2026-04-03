@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
 import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
+import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { formatKm, formatSpeed, formatElapsed, formatDelay } from "@/lib/format";
@@ -18,6 +19,7 @@ export default function Home(): React.JSX.Element {
   const { data, isPending, error, dataUpdatedAt } = useArtemisData();
   const { data: trajectory } = useArtemisTrajectory();
   const { data: moonTrajectory } = useMoonTrajectory();
+  const { milestone, secondsRemaining } = useNextMilestone();
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
   return (
@@ -73,7 +75,7 @@ export default function Home(): React.JSX.Element {
 
       {/* Stats bar */}
       <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
-        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-3 lg:grid-cols-6">
           <StatCard
             label="Distance from Earth"
             value={data ? formatKm(data.distanceFromEarthKm) : "—"}
@@ -94,6 +96,11 @@ export default function Home(): React.JSX.Element {
             label="Mission elapsed"
             value={data ? formatElapsed(data.missionElapsedSeconds) : "—"}
             sub="since launch"
+          />
+          <StatCard
+            label={milestone ? `Next: ${milestone.name}` : "Next Milestone"}
+            value={milestone ? formatElapsed(secondsRemaining) : "—"}
+            sub={milestone ? "countdown" : "mission complete"}
           />
         </div>
       </section>

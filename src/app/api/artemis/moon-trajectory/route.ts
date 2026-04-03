@@ -12,7 +12,7 @@ export async function GET(): Promise<Response> {
     const now = new Date();
     const start = new Date(now.getTime() - HOURS_BACK * 60 * 60 * 1000);
     const positions = await fetchTrajectory("301", start, now);
-    const points: ScenePoint[] = positions.map(toScenePosition);
+    const points: ScenePoint[] = positions.map((p) => toScenePosition(p.position));
     return Response.json(points);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";

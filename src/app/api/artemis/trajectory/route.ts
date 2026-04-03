@@ -7,7 +7,7 @@ export const revalidate = 300;
 export async function GET(): Promise<Response> {
   try {
     const positions = await fetchTrajectory("-1024", undefined, undefined, "10m");
-    const points: ScenePoint[] = positions.map(toScenePosition);
+    const points: ScenePoint[] = positions.map((p) => toScenePosition(p.position));
     return Response.json(points);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
