@@ -1,2 +1,35 @@
-// Shared TypeScript types and interfaces used across the application.
-// Export all types from this barrel file.
+export interface Vec3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface HorizonsBody {
+  /** Earth-centered J2000 ecliptic position in km */
+  position: Vec3;
+  /** Velocity in km/s */
+  velocity: Vec3;
+  /** One-way light-time in seconds */
+  lightTime: number;
+  /** Range from Earth center in km */
+  rangeKm: number;
+  /** Radial velocity in km/s (positive = moving away) */
+  rangeRate: number;
+}
+
+export interface ArtemisData {
+  spacecraft: HorizonsBody;
+  moon: HorizonsBody;
+  /** Speed magnitude in km/s */
+  speedKms: number;
+  /** Distance from Earth surface in km */
+  distanceFromEarthKm: number;
+  /** Distance from Moon surface in km */
+  distanceFromMoonKm: number;
+  /** One-way signal delay in seconds */
+  signalDelaySeconds: number;
+  /** Mission elapsed time in seconds since launch */
+  missionElapsedSeconds: number;
+  /** ISO timestamp of this data snapshot */
+  timestamp: string;
+}

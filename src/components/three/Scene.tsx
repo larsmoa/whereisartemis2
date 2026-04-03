@@ -15,7 +15,7 @@ interface SceneProps {
  *
  * Place all 3D content as children of this component.
  */
-export function Scene({ children, className }: SceneProps) {
+export function Scene({ children, className }: SceneProps): React.JSX.Element {
   return (
     <Canvas className={className}>
       <OrbitControls />
