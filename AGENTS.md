@@ -38,6 +38,7 @@ test: add unit tests for useWindowSize hook
 
 - Commit after every file you create or meaningfully change.
 - Never commit broken builds — run `pnpm type-check` and `pnpm lint` before committing if the pre-commit hook is bypassed.
+- You must proactively run `pnpm type-check` and `pnpm lint` (or use the `ReadLints` tool) after modifying types or making structural changes. Do not rely solely on `pnpm test`, as Vitest strips TypeScript types and will pass even if there are type errors.
 - Write commit messages in the imperative mood ("add", not "added" or "adds").
 - Keep the subject line under 72 characters.
 - Add a blank line before the body if a longer explanation is needed.
