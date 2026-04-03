@@ -1,6 +1,6 @@
 const config = {
-  "**/*.{ts,tsx}": ["eslint --max-warnings 0", "prettier --check"],
-  "**/*.{json,css,md}": ["prettier --check"],
+  "**/*.{ts,tsx}": ["prettier --write", "eslint --max-warnings 0"],
+  "**/*.{json,css,md}": ["prettier --write"],
 };
 
 export default config;
