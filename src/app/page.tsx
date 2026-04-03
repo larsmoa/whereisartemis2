@@ -58,7 +58,7 @@ export default function Home(): React.JSX.Element {
         <SpaceScene data={data ?? null} className="h-full w-full" />
         {/* Drag hint overlay */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-xs text-zinc-500 backdrop-blur-sm">
-          Drag to orbit · Scroll to zoom
+          Drag to pan · Scroll to zoom
         </div>
       </div>
 

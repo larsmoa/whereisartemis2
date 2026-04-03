@@ -29,7 +29,7 @@ function generateStarPositions(count: number): Float32Array {
 
 const STAR_POSITIONS = generateStarPositions(4000);
 
-/** Simple point-based star field — no useFrame, compatible with R3F alpha */
+/** Simple point-based star field — sizeAttenuation disabled for orthographic camera */
 function PointStars(): React.JSX.Element {
   const positions = STAR_POSITIONS;
 
@@ -40,10 +40,10 @@ function PointStars(): React.JSX.Element {
       </bufferGeometry>
       <pointsMaterial
         color="#ffffff"
-        size={0.4}
-        sizeAttenuation
+        size={1.2}
+        sizeAttenuation={false}
         transparent
-        opacity={0.8}
+        opacity={0.7}
         depthWrite={false}
       />
     </points>
@@ -73,32 +73,38 @@ function SceneContents({ data }: { data: ArtemisData | null }): React.JSX.Elemen
       <EarthMesh />
       <MoonMesh position={moonPos} />
       {data && <ArtemisMesh position={artemisPos} />}
+      {/*
+       * Lock polar angle to π/2 so the camera stays exactly top-down.
+       * This allows panning (drag) and zooming (scroll) but not vertical tilt.
+       * enableRotate={false} would disable all rotation — instead we allow
+       * azimuth rotation (spin around Y axis) while clamping polar to 90°.
+       */}
       <OrbitControls
         enablePan={true}
         enableZoom={true}
-        enableRotate={true}
-        minDistance={3}
-        maxDistance={150}
+        enableRotate={false}
+        mouseButtons={{ LEFT: 2, MIDDLE: 1, RIGHT: 2 }}
       />
     </>
   );
 }
 
 /**
- * Full 3D scene canvas.
- * Camera starts top-down (looking along -Y) so the orbital plane is
- * immediately visible. OrbitControls lets the user tilt/zoom freely.
+ * Orthographic top-down canvas.
+ * Camera looks straight down (-Y). Pan and scroll-to-zoom are enabled;
+ * vertical tilt is disabled (enableRotate={false}).
  */
 export function SpaceScene({ data, className }: SpaceSceneProps): React.JSX.Element {
   return (
     <Canvas
       className={className}
+      orthographic
       camera={{
-        position: [0, 55, 0],
+        position: [0, 100, 0],
         up: [0, 0, -1],
-        fov: 60,
+        zoom: 10,
         near: 0.1,
-        far: 600,
+        far: 1000,
       }}
     >
       <SceneContents data={data} />
