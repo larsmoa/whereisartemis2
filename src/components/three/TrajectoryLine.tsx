@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { CatmullRomCurve3, Vector3 } from "three";
-import type { BufferGeometry } from "three";
+import { Line } from "@react-three/drei";
 import type { ScenePoint } from "@/types";
 
 /** Samples per input point — higher = smoother curve */
@@ -13,6 +13,7 @@ interface TrajectoryLineProps {
   color?: string;
   opacity?: number;
   dashed?: boolean;
+  lineWidth?: number;
 }
 
 export function TrajectoryLine({
@@ -20,10 +21,11 @@ export function TrajectoryLine({
   color = "#4488ff",
   opacity = 0.6,
   dashed = false,
+  lineWidth = 2.5,
 }: TrajectoryLineProps): React.JSX.Element | null {
-  const geomRef = useRef<BufferGeometry>(null);
+  const curvePoints = useMemo(() => {
+    if (points.length < 2) return [];
 
-  const { flatArray, lineDistances } = useMemo(() => {
     const vectors = points.map(([x, y, z]) => new Vector3(x, y, z));
 
     // CatmullRomCurve3 with centripetal parameterisation prevents cusps and
@@ -31,62 +33,21 @@ export function TrajectoryLine({
     // when adjacent control points are unevenly spaced (e.g. early high-velocity phase).
     const curve = new CatmullRomCurve3(vectors, false, "centripetal");
     const sampleCount = points.length * SAMPLES_PER_POINT;
-    const sampled = curve.getPoints(sampleCount);
-
-    const arr = new Float32Array(sampled.length * 3);
-    const dists = new Float32Array(sampled.length);
-    let currentDist = 0;
-
-    sampled.forEach((v, i) => {
-      arr[i * 3] = v.x;
-      arr[i * 3 + 1] = v.y;
-      arr[i * 3 + 2] = v.z;
-
-      if (i > 0) {
-        const prev = sampled[i - 1];
-        if (prev) {
-          currentDist += v.distanceTo(prev);
-        }
-      }
-      dists[i] = currentDist;
-    });
-
-    return { flatArray: arr, lineDistances: dists };
+    return curve.getPoints(sampleCount);
   }, [points]);
 
-  if (points.length < 2) return null;
-
-  const vertexCount = points.length * SAMPLES_PER_POINT + 1;
+  if (curvePoints.length < 2) return null;
 
   return (
-    <line>
-      <bufferGeometry ref={geomRef}>
-        <bufferAttribute
-          attach="attributes-position"
-          args={[flatArray, 3]}
-          count={vertexCount}
-          itemSize={3}
-        />
-        {dashed && (
-          <bufferAttribute
-            attach="attributes-lineDistance"
-            args={[lineDistances, 1]}
-            count={vertexCount}
-            itemSize={1}
-          />
-        )}
-      </bufferGeometry>
-      {dashed ? (
-        <lineDashedMaterial
-          color={color}
-          opacity={opacity}
-          transparent
-          dashSize={0.5}
-          gapSize={0.5}
-        />
-      ) : (
-        <lineBasicMaterial color={color} opacity={opacity} transparent />
-      )}
-    </line>
+    <Line
+      points={curvePoints}
+      color={color}
+      transparent
+      opacity={opacity}
+      dashed={dashed}
+      dashSize={0.5}
+      gapSize={0.5}
+      lineWidth={lineWidth}
+    />
   );
 }
