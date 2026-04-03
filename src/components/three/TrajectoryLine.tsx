@@ -12,16 +12,18 @@ interface TrajectoryLineProps {
   points: ScenePoint[];
   color?: string;
   opacity?: number;
+  dashed?: boolean;
 }
 
 export function TrajectoryLine({
   points,
   color = "#4488ff",
   opacity = 0.6,
+  dashed = false,
 }: TrajectoryLineProps): React.JSX.Element | null {
   const geomRef = useRef<BufferGeometry>(null);
 
-  const flatArray = useMemo(() => {
+  const { flatArray, lineDistances } = useMemo(() => {
     const vectors = points.map(([x, y, z]) => new Vector3(x, y, z));
 
     // CatmullRomCurve3 with centripetal parameterisation prevents cusps and
@@ -32,12 +34,24 @@ export function TrajectoryLine({
     const sampled = curve.getPoints(sampleCount);
 
     const arr = new Float32Array(sampled.length * 3);
+    const dists = new Float32Array(sampled.length);
+    let currentDist = 0;
+
     sampled.forEach((v, i) => {
       arr[i * 3] = v.x;
       arr[i * 3 + 1] = v.y;
       arr[i * 3 + 2] = v.z;
+
+      if (i > 0) {
+        const prev = sampled[i - 1];
+        if (prev) {
+          currentDist += v.distanceTo(prev);
+        }
+      }
+      dists[i] = currentDist;
     });
-    return arr;
+
+    return { flatArray: arr, lineDistances: dists };
   }, [points]);
 
   if (points.length < 2) return null;
@@ -53,8 +67,26 @@ export function TrajectoryLine({
           count={vertexCount}
           itemSize={3}
         />
+        {dashed && (
+          <bufferAttribute
+            attach="attributes-lineDistance"
+            args={[lineDistances, 1]}
+            count={vertexCount}
+            itemSize={1}
+          />
+        )}
       </bufferGeometry>
-      <lineBasicMaterial color={color} opacity={opacity} transparent />
+      {dashed ? (
+        <lineDashedMaterial
+          color={color}
+          opacity={opacity}
+          transparent
+          dashSize={0.5}
+          gapSize={0.5}
+        />
+      ) : (
+        <lineBasicMaterial color={color} opacity={opacity} transparent />
+      )}
     </line>
   );
 }

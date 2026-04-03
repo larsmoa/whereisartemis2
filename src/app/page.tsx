@@ -17,8 +17,10 @@ const SpaceScene = dynamic(
 
 export default function Home(): React.JSX.Element {
   const { data, isPending, error, dataUpdatedAt } = useArtemisData();
-  const { data: trajectory } = useArtemisTrajectory();
-  const { data: moonTrajectory } = useMoonTrajectory();
+  const { data: trajectory } = useArtemisTrajectory("past");
+  const { data: plannedTrajectory } = useArtemisTrajectory("future");
+  const { data: moonTrajectory } = useMoonTrajectory("past");
+  const { data: plannedMoonTrajectory } = useMoonTrajectory("future");
   const { milestone, secondsRemaining } = useNextMilestone();
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
@@ -65,6 +67,8 @@ export default function Home(): React.JSX.Element {
           data={data ?? null}
           trajectory={trajectory ?? null}
           moonTrajectory={moonTrajectory ?? null}
+          plannedTrajectory={plannedTrajectory ?? null}
+          plannedMoonTrajectory={plannedMoonTrajectory ?? null}
           className="h-full w-full"
         />
         {/* Drag hint overlay */}

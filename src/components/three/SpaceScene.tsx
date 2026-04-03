@@ -13,6 +13,8 @@ interface SpaceSceneProps {
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
   moonTrajectory: ScenePoint[] | null;
+  plannedTrajectory?: ScenePoint[] | null | undefined;
+  plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   className?: string;
 }
 
@@ -61,10 +63,14 @@ function SceneContents({
   data,
   trajectory,
   moonTrajectory,
+  plannedTrajectory,
+  plannedMoonTrajectory,
 }: {
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
   moonTrajectory: ScenePoint[] | null;
+  plannedTrajectory?: ScenePoint[] | null | undefined;
+  plannedMoonTrajectory?: ScenePoint[] | null | undefined;
 }): React.JSX.Element {
   const moonPos = data
     ? toScenePosition(data.moon.position)
@@ -84,7 +90,13 @@ function SceneContents({
       <EarthMesh />
       <MoonMesh position={moonPos} />
       {moonTrajectory && <TrajectoryLine points={moonTrajectory} color="#aaaaaa" opacity={0.4} />}
+      {plannedMoonTrajectory && (
+        <TrajectoryLine points={plannedMoonTrajectory} color="#aaaaaa" opacity={0.2} dashed />
+      )}
       {trajectory && <TrajectoryLine points={trajectory} color="#4488ff" opacity={0.6} />}
+      {plannedTrajectory && (
+        <TrajectoryLine points={plannedTrajectory} color="#4488ff" opacity={0.3} dashed />
+      )}
       {data && <ArtemisMesh position={artemisPos} />}
       {/*
        * Lock polar angle to π/2 so the camera stays exactly top-down.
@@ -114,6 +126,8 @@ export function SpaceScene({
   data,
   trajectory,
   moonTrajectory,
+  plannedTrajectory,
+  plannedMoonTrajectory,
   className,
 }: SpaceSceneProps): React.JSX.Element {
   return (
@@ -128,7 +142,13 @@ export function SpaceScene({
         far: 1000,
       }}
     >
-      <SceneContents data={data} trajectory={trajectory} moonTrajectory={moonTrajectory} />
+      <SceneContents
+        data={data}
+        trajectory={trajectory}
+        moonTrajectory={moonTrajectory}
+        plannedTrajectory={plannedTrajectory}
+        plannedMoonTrajectory={plannedMoonTrajectory}
+      />
     </Canvas>
   );
 }

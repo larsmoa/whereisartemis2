@@ -5,8 +5,8 @@ import type { ScenePoint } from "@/types";
 
 const STALE_TIME = 300_000;
 
-async function fetchTrajectoryData(): Promise<ScenePoint[]> {
-  const res = await fetch("/api/artemis/trajectory");
+async function fetchTrajectoryData(type: "past" | "future"): Promise<ScenePoint[]> {
+  const res = await fetch(`/api/artemis/trajectory?type=${type}`);
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
   }
@@ -17,10 +17,12 @@ async function fetchTrajectoryData(): Promise<ScenePoint[]> {
   return json;
 }
 
-export function useArtemisTrajectory(): UseQueryResult<ScenePoint[], Error> {
+export function useArtemisTrajectory(
+  type: "past" | "future" = "past",
+): UseQueryResult<ScenePoint[], Error> {
   return useQuery({
-    queryKey: ["artemis", "trajectory"],
-    queryFn: fetchTrajectoryData,
+    queryKey: ["artemis", "trajectory", type],
+    queryFn: () => fetchTrajectoryData(type),
     staleTime: STALE_TIME,
     refetchInterval: STALE_TIME,
   });
