@@ -35,6 +35,7 @@ test: add unit tests for useWindowSize hook
 ```
 
 **Rules:**
+
 - Commit after every file you create or meaningfully change.
 - Never commit broken builds — run `pnpm type-check` and `pnpm lint` before committing if the pre-commit hook is bypassed.
 - Write commit messages in the imperative mood ("add", not "added" or "adds").
@@ -61,6 +62,7 @@ src/
 ```
 
 **Rules:**
+
 - Do not put business logic in `app/` — route files should be thin wrappers.
 - `lib/` is the correct place for fetch helpers, formatters, and server utilities.
 - `hooks/` files must only be used in Client Components.
@@ -88,6 +90,7 @@ Otherwise?                                          → Server Component (no dir
 ```
 
 **Best practices:**
+
 - Push `"use client"` as far down the component tree as possible.
 - Server Components can import Client Components, but not vice versa (for server-only code).
 - Use `next/dynamic` with `{ ssr: false }` to lazy-load heavy Client Components (e.g. 3D canvas):
@@ -107,6 +110,7 @@ const Scene = dynamic(() => import("@/components/three/Scene").then((m) => m.Sce
 All 3D components live in `src/components/three/` and **must** have `"use client"` as their first line.
 
 **Do:**
+
 - Use the `<Scene>` wrapper component as the base canvas; extend it with children.
 - Keep geometry, materials, and animation logic inside the canvas tree.
 - Use `useFrame` for per-frame updates; never use `setInterval` or `requestAnimationFrame` directly.
@@ -114,6 +118,7 @@ All 3D components live in `src/components/three/` and **must** have `"use client
 - Dispose of geometries and materials when components unmount to prevent WebGL memory leaks.
 
 **Do not:**
+
 - Import R3F or Three.js in Server Components — it will crash the build.
 - Put canvas state (camera position, object refs) in global React state; use R3F's own state via `useThree`.
 - Use `@react-three/fiber` version `^9` — this project uses the `@alpha` version for React 19 compatibility.
@@ -126,18 +131,19 @@ All 3D components live in `src/components/three/` and **must** have `"use client
 
 The `tsconfig.json` enables the strictest TypeScript settings. All of these are enforced:
 
-| Flag | Why |
-|---|---|
-| `strict` | Enables all strict type checks |
-| `noUncheckedIndexedAccess` | Array/object indexing returns `T \| undefined` |
+| Flag                         | Why                                              |
+| ---------------------------- | ------------------------------------------------ |
+| `strict`                     | Enables all strict type checks                   |
+| `noUncheckedIndexedAccess`   | Array/object indexing returns `T \| undefined`   |
 | `exactOptionalPropertyTypes` | `{ foo?: string }` means absent, not `undefined` |
-| `noUnusedLocals` | Unused variables are errors |
-| `noUnusedParameters` | Unused function parameters are errors |
-| `noImplicitReturns` | Every code path must return a value |
-| `noFallthroughCasesInSwitch` | Every switch case must break/return |
-| `verbatimModuleSyntax` | Enforces `import type` for type-only imports |
+| `noUnusedLocals`             | Unused variables are errors                      |
+| `noUnusedParameters`         | Unused function parameters are errors            |
+| `noImplicitReturns`          | Every code path must return a value              |
+| `noFallthroughCasesInSwitch` | Every switch case must break/return              |
+| `verbatimModuleSyntax`       | Enforces `import type` for type-only imports     |
 
 **Rules:**
+
 - Never use `any`. Use `unknown` and narrow with type guards.
 - Never use `as unknown as T` — this defeats the type system entirely.
 - Prefer `Partial<T>` with `as T` in tests to mock only the fields you need.
@@ -156,16 +162,16 @@ ESLint is configured in `eslint.config.mjs` with **zero warnings tolerated** (`-
 
 Key rules enforced:
 
-| Rule | Severity | What it catches |
-|---|---|---|
-| `@typescript-eslint/no-explicit-any` | error | `any` type usage |
-| `@typescript-eslint/consistent-type-imports` | error | Missing `import type` |
-| `@typescript-eslint/no-floating-promises` | error | Unhandled promise results |
-| `@typescript-eslint/require-await` | error | `async` functions without `await` |
-| `@typescript-eslint/prefer-nullish-coalescing` | error | `\|\|` when `??` is correct |
-| `@typescript-eslint/switch-exhaustiveness-check` | error | Non-exhaustive switch |
-| `no-console` | error | `console.log` left in code |
-| `reportUnusedDisableDirectives` | error | Stale `eslint-disable` comments |
+| Rule                                             | Severity | What it catches                   |
+| ------------------------------------------------ | -------- | --------------------------------- |
+| `@typescript-eslint/no-explicit-any`             | error    | `any` type usage                  |
+| `@typescript-eslint/consistent-type-imports`     | error    | Missing `import type`             |
+| `@typescript-eslint/no-floating-promises`        | error    | Unhandled promise results         |
+| `@typescript-eslint/require-await`               | error    | `async` functions without `await` |
+| `@typescript-eslint/prefer-nullish-coalescing`   | error    | `\|\|` when `??` is correct       |
+| `@typescript-eslint/switch-exhaustiveness-check` | error    | Non-exhaustive switch             |
+| `no-console`                                     | error    | `console.log` left in code        |
+| `reportUnusedDisableDirectives`                  | error    | Stale `eslint-disable` comments   |
 
 To fix auto-fixable issues: `pnpm lint:fix`
 
@@ -173,16 +179,16 @@ To fix auto-fixable issues: `pnpm lint:fix`
 
 ## Naming Conventions
 
-| Thing | Convention | Example |
-|---|---|---|
-| React components | PascalCase | `SceneCanvas.tsx` |
-| Hooks | camelCase, `use` prefix | `useWindowSize.ts` |
-| Utility functions | camelCase | `formatDate.ts` |
-| Types / interfaces | PascalCase | `type UserProfile = ...` |
-| Constants | SCREAMING_SNAKE_CASE | `const MAX_RETRY_COUNT = 3` |
-| Files (non-component) | kebab-case | `api-client.ts` |
-| Test files | Same name + `.spec` | `SceneCanvas.spec.tsx` |
-| CSS classes | Tailwind utilities only; no custom class names unless necessary | |
+| Thing                 | Convention                                                      | Example                     |
+| --------------------- | --------------------------------------------------------------- | --------------------------- |
+| React components      | PascalCase                                                      | `SceneCanvas.tsx`           |
+| Hooks                 | camelCase, `use` prefix                                         | `useWindowSize.ts`          |
+| Utility functions     | camelCase                                                       | `formatDate.ts`             |
+| Types / interfaces    | PascalCase                                                      | `type UserProfile = ...`    |
+| Constants             | SCREAMING_SNAKE_CASE                                            | `const MAX_RETRY_COUNT = 3` |
+| Files (non-component) | kebab-case                                                      | `api-client.ts`             |
+| Test files            | Same name + `.spec`                                             | `SceneCanvas.spec.tsx`      |
+| CSS classes           | Tailwind utilities only; no custom class names unless necessary |                             |
 
 ---
 
@@ -210,8 +216,32 @@ Tests live alongside source files or in `src/test/` for shared utilities.
 - Use `vi.mock(import(...), ...)` for module mocks (not `vi.mock("module-name", ...)`).
 - `renderHook` must be imported from `@testing-library/react`.
 - Do not use `any` in tests. Use `Partial<T>` with `as T` to partially mock types.
+- **Prefer data-driven tests** (`it.each`) whenever the same assertion logic applies to multiple inputs. This keeps tests short and makes adding new cases trivial.
 - Run tests: `pnpm test`
 - Watch mode: `pnpm test:watch`
+- Run with coverage: `pnpm test:coverage`
+
+**Data-driven test pattern (`it.each`):**
+
+```ts
+it.each([
+  [0, "0s"],
+  [45, "45s"],
+  [3661, "1h 1m 1s"],
+] as const)("formatElapsed(%s) → %s", (seconds, expected) => {
+  expect(formatElapsed(seconds)).toBe(expected);
+});
+```
+
+Use individual `it(...)` blocks only when the test has unique setup, branching logic, or requires a prose description that a table row cannot convey.
+
+### Coverage requirement
+
+**All pure logic in `src/lib/` must maintain ≥ 80% coverage** across statements, branches, functions, and lines. This threshold is enforced by vitest — `pnpm test:coverage` will fail if any metric drops below 80%.
+
+Coverage is measured only over `src/lib/**/*.ts` (pure, testable utilities). React components, hooks, and R3F canvas code are excluded — they require browser/WebGL environments and are better validated with integration or E2E tests.
+
+When adding new functions to `src/lib/`, you must add corresponding tests to maintain the threshold.
 
 **Example test structure:**
 
