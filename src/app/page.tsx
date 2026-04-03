@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
+import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
+import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { formatKm, formatSpeed, formatElapsed, formatDelay } from "@/lib/format";
@@ -14,6 +16,8 @@ const SpaceScene = dynamic(
 
 export default function Home(): React.JSX.Element {
   const { data, isPending, error, dataUpdatedAt } = useArtemisData();
+  const { data: trajectory } = useArtemisTrajectory();
+  const { data: moonTrajectory } = useMoonTrajectory();
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
 
   return (
@@ -55,7 +59,12 @@ export default function Home(): React.JSX.Element {
             </div>
           </div>
         )}
-        <SpaceScene data={data ?? null} className="h-full w-full" />
+        <SpaceScene
+          data={data ?? null}
+          trajectory={trajectory ?? null}
+          moonTrajectory={moonTrajectory ?? null}
+          className="h-full w-full"
+        />
         {/* Drag hint overlay */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-xs text-zinc-500 backdrop-blur-sm">
           Drag to pan · Scroll to zoom

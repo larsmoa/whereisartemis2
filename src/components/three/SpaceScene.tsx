@@ -5,11 +5,14 @@ import { OrbitControls } from "@react-three/drei";
 import { EarthMesh } from "./EarthMesh";
 import { MoonMesh } from "./MoonMesh";
 import { ArtemisMesh } from "./ArtemisMesh";
+import { TrajectoryLine } from "./TrajectoryLine";
 import { toScenePosition } from "@/lib/sceneCoords";
-import type { ArtemisData } from "@/types";
+import type { ArtemisData, ScenePoint } from "@/types";
 
 interface SpaceSceneProps {
   data: ArtemisData | null;
+  trajectory: ScenePoint[] | null;
+  moonTrajectory: ScenePoint[] | null;
   className?: string;
 }
 
@@ -54,7 +57,15 @@ function PointStars(): React.JSX.Element {
  * Lights, camera (top-down), action.
  * Extracted into its own component so it only renders inside the Canvas context.
  */
-function SceneContents({ data }: { data: ArtemisData | null }): React.JSX.Element {
+function SceneContents({
+  data,
+  trajectory,
+  moonTrajectory,
+}: {
+  data: ArtemisData | null;
+  trajectory: ScenePoint[] | null;
+  moonTrajectory: ScenePoint[] | null;
+}): React.JSX.Element {
   const moonPos = data
     ? toScenePosition(data.moon.position)
     : ([30, 0, 0] as [number, number, number]);
@@ -72,6 +83,8 @@ function SceneContents({ data }: { data: ArtemisData | null }): React.JSX.Elemen
       <PointStars />
       <EarthMesh />
       <MoonMesh position={moonPos} />
+      {moonTrajectory && <TrajectoryLine points={moonTrajectory} color="#aaaaaa" opacity={0.4} />}
+      {trajectory && <TrajectoryLine points={trajectory} color="#4488ff" opacity={0.6} />}
       {data && <ArtemisMesh position={artemisPos} />}
       {/*
        * Lock polar angle to π/2 so the camera stays exactly top-down.
@@ -94,7 +107,12 @@ function SceneContents({ data }: { data: ArtemisData | null }): React.JSX.Elemen
  * Camera looks straight down (-Y). Pan and scroll-to-zoom are enabled;
  * vertical tilt is disabled (enableRotate={false}).
  */
-export function SpaceScene({ data, className }: SpaceSceneProps): React.JSX.Element {
+export function SpaceScene({
+  data,
+  trajectory,
+  moonTrajectory,
+  className,
+}: SpaceSceneProps): React.JSX.Element {
   return (
     <Canvas
       className={className}
@@ -107,7 +125,7 @@ export function SpaceScene({ data, className }: SpaceSceneProps): React.JSX.Elem
         far: 1000,
       }}
     >
-      <SceneContents data={data} />
+      <SceneContents data={data} trajectory={trajectory} moonTrajectory={moonTrajectory} />
     </Canvas>
   );
 }

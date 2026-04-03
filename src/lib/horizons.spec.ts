@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   parseSoeBlock,
+  parseSoeBlocks,
   fetchArtemisAndMoon,
+  fetchTrajectory,
   EARTH_RADIUS_KM,
   MOON_RADIUS_KM,
   LAUNCH_TIME,
@@ -94,6 +96,124 @@ $$EOE
 });
 
 // ---------------------------------------------------------------------------
+// parseSoeBlocks (multi-epoch)
+// ---------------------------------------------------------------------------
+
+const MULTI_EPOCH_SOE_RESULT = `
+*******************************************************************************
+$$SOE
+2461133.500000000 = A.D. 2026-Apr-01 06:47:00.0000 TDB 
+ X =-4.167610090861469E+03 Y = 6.427774643992089E+03 Z = 4.774057898683686E+02
+ VX=-9.926859512834213E+00 VY=-1.868923074835082E+00 VZ=-3.356176930872550E-01
+ LT= 2.560268535261566E-02 RG= 7.675491973261245E+03 RR= 3.804060742439584E+00
+2461133.541666667 = A.D. 2026-Apr-01 07:47:00.0000 TDB 
+ X = 1.000000000000000E+04 Y = 2.000000000000000E+04 Z = 3.000000000000000E+03
+ VX=-9.000000000000000E+00 VY=-1.000000000000000E+00 VZ=-1.000000000000000E-01
+ LT= 5.000000000000000E-02 RG= 2.236067977499790E+04 RR= 3.000000000000000E+00
+2461133.583333333 = A.D. 2026-Apr-01 08:47:00.0000 TDB 
+ X =-5.000000000000000E+04 Y =-5.000000000000000E+04 Z =-5.000000000000000E+03
+ VX=-2.000000000000000E+00 VY=-2.000000000000000E+00 VZ=-2.000000000000000E-01
+ LT= 1.000000000000000E-01 RG= 7.071067811865476E+04 RR= 2.000000000000000E+00
+$$EOE
+*******************************************************************************
+`;
+
+describe("parseSoeBlocks", () => {
+  it("returns one Vec3 per epoch", () => {
+    const result = parseSoeBlocks(MULTI_EPOCH_SOE_RESULT);
+
+    expect(result).toHaveLength(3);
+  });
+
+  it.each([
+    [0, -4167.61, 6427.77, 477.41],
+    [1, 10000, 20000, 3000],
+    [2, -50000, -50000, -5000],
+  ] as const)("epoch %i has correct x/y/z (±0.5 km)", (idx, x, y, z) => {
+    const result = parseSoeBlocks(MULTI_EPOCH_SOE_RESULT);
+
+    expect(result[idx]?.x).toBeCloseTo(x, 0);
+    expect(result[idx]?.y).toBeCloseTo(y, 0);
+    expect(result[idx]?.z).toBeCloseTo(z, 0);
+  });
+
+  it("throws when no SOE block is present", () => {
+    expect(() => parseSoeBlocks("no data here")).toThrow("No SOE block found");
+  });
+
+  it("returns empty array when SOE block has no position lines", () => {
+    const noPositions = `
+$$SOE
+2461133.500000000 = A.D. 2026-Apr-01 06:47:00.0000 TDB 
+$$EOE
+`;
+    const result = parseSoeBlocks(noPositions);
+
+    expect(result).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fetchTrajectory (mocked fetch)
+// ---------------------------------------------------------------------------
+
+describe("fetchTrajectory", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("returns parsed Vec3[] for all epochs", async () => {
+    // Arrange
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve(JSON.parse(JSON.stringify({ result: MULTI_EPOCH_SOE_RESULT })) as unknown),
+    } as Response);
+
+    // Act
+    const result = await fetchTrajectory("-1024");
+
+    // Assert
+    expect(result).toHaveLength(3);
+    expect(result[0]?.x).toBeCloseTo(-4167.61, 0);
+  });
+
+  it("uses STEP_SIZE=1 h in the request URL", async () => {
+    // Arrange
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () =>
+        Promise.resolve(JSON.parse(JSON.stringify({ result: MULTI_EPOCH_SOE_RESULT })) as unknown),
+    } as Response);
+
+    // Act
+    await fetchTrajectory("-1024");
+
+    // Assert
+    const url = mockFetch.mock.calls[0]?.[0] as string;
+    expect(url).toContain("STEP_SIZE=1h");
+  });
+
+  it("throws when the API returns a non-ok response", async () => {
+    // Arrange
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 503,
+      statusText: "Service Unavailable",
+    } as Response);
+
+    // Act / Assert
+    await expect(fetchTrajectory("-1024")).rejects.toThrow("Horizons API error: 503");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Exported constants
 // ---------------------------------------------------------------------------
 
@@ -106,8 +226,8 @@ describe("constants", () => {
     expect(MOON_RADIUS_KM).toBeCloseTo(1737.4, 1);
   });
 
-  it("LAUNCH_TIME is April 1 2026 at 06:47 UTC", () => {
-    expect(LAUNCH_TIME.toISOString()).toBe("2026-04-01T06:47:00.000Z");
+  it("LAUNCH_TIME is the earliest available Artemis II ephemeris", () => {
+    expect(LAUNCH_TIME.toISOString()).toBe("2026-04-02T02:00:00.000Z");
   });
 });
 

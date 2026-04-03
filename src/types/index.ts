@@ -17,6 +17,9 @@ export interface HorizonsBody {
   rangeRate: number;
 }
 
+/** A single point along the spacecraft trajectory in scene-space coordinates */
+export type ScenePoint = [number, number, number];
+
 export interface ArtemisData {
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
