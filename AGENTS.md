@@ -148,6 +148,8 @@ The `tsconfig.json` enables the strictest TypeScript settings. All of these are 
 - Never use `as unknown as T` — this defeats the type system entirely.
 - Prefer `Partial<T>` with `as T` in tests to mock only the fields you need.
 - Prefix intentionally unused variables/parameters with `_` (e.g. `_event`).
+- **All functions must have explicit return types** — enforced by `@typescript-eslint/explicit-function-return-type`. This applies to components, hooks, utilities, and helpers alike.
+- **Prefer narrow types over broad/generic ones.** A hook returning a React Query result should declare `UseQueryResult<ArtemisData, Error>`, not `UseQueryResult` or an implicit inferred type. The return type should communicate exactly what the caller receives.
 - Use `import type` for any import that is only used as a type:
 
 ```ts
@@ -162,16 +164,17 @@ ESLint is configured in `eslint.config.mjs` with **zero warnings tolerated** (`-
 
 Key rules enforced:
 
-| Rule                                             | Severity | What it catches                   |
-| ------------------------------------------------ | -------- | --------------------------------- |
-| `@typescript-eslint/no-explicit-any`             | error    | `any` type usage                  |
-| `@typescript-eslint/consistent-type-imports`     | error    | Missing `import type`             |
-| `@typescript-eslint/no-floating-promises`        | error    | Unhandled promise results         |
-| `@typescript-eslint/require-await`               | error    | `async` functions without `await` |
-| `@typescript-eslint/prefer-nullish-coalescing`   | error    | `\|\|` when `??` is correct       |
-| `@typescript-eslint/switch-exhaustiveness-check` | error    | Non-exhaustive switch             |
-| `no-console`                                     | error    | `console.log` left in code        |
-| `reportUnusedDisableDirectives`                  | error    | Stale `eslint-disable` comments   |
+| Rule                                               | Severity | What it catches                   |
+| -------------------------------------------------- | -------- | --------------------------------- |
+| `@typescript-eslint/no-explicit-any`               | error    | `any` type usage                  |
+| `@typescript-eslint/consistent-type-imports`       | error    | Missing `import type`             |
+| `@typescript-eslint/no-floating-promises`          | error    | Unhandled promise results         |
+| `@typescript-eslint/require-await`                 | error    | `async` functions without `await` |
+| `@typescript-eslint/prefer-nullish-coalescing`     | error    | `\|\|` when `??` is correct       |
+| `@typescript-eslint/switch-exhaustiveness-check`   | error    | Non-exhaustive switch             |
+| `@typescript-eslint/explicit-function-return-type` | error    | Missing return type on function   |
+| `no-console`                                       | error    | `console.log` left in code        |
+| `reportUnusedDisableDirectives`                    | error    | Stale `eslint-disable` comments   |
 
 To fix auto-fixable issues: `pnpm lint:fix`
 

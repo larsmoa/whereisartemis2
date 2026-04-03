@@ -64,6 +64,17 @@ const eslintConfig = defineConfig([
 
       // Require await in async functions
       "@typescript-eslint/require-await": "error",
+
+      // Require explicit return types on functions and class methods
+      "@typescript-eslint/explicit-function-return-type": [
+        "error",
+        {
+          allowExpressions: true,
+          allowTypedFunctionExpressions: true,
+          allowHigherOrderFunctions: true,
+          allowDirectConstAssertionInArrowFunctions: true,
+        },
+      ],
     },
   },
 ]);
