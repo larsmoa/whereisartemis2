@@ -103,9 +103,12 @@ function SceneContents({
 }
 
 /**
- * Orthographic top-down canvas.
- * Camera looks straight down (-Y). Pan and scroll-to-zoom are enabled;
- * vertical tilt is disabled (enableRotate={false}).
+ * Orthographic canvas looking straight down the ecliptic Z axis.
+ *
+ * J2000 ecliptic: X = vernal equinox, Y = 90° along ecliptic, Z = ecliptic north.
+ * Artemis moves in the XY (ecliptic) plane, so placing the camera at +Z and
+ * pointing it toward the origin gives a true top-down view of the orbital plane.
+ * "up" is +Y so north is up on screen.
  */
 export function SpaceScene({
   data,
@@ -118,8 +121,8 @@ export function SpaceScene({
       className={className}
       orthographic
       camera={{
-        position: [0, 100, 0],
-        up: [0, 0, -1],
+        position: [0, 0, 100],
+        up: [0, 1, 0],
         zoom: 10,
         near: 0.1,
         far: 1000,

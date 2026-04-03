@@ -30,10 +30,9 @@ function logMapMagnitude(r: number): number {
  * preserved — i.e. the angular position of each body around Earth is correct.
  * Only the radial distance is compressed.
  *
- * J2000 ecliptic axes: X toward vernal equinox, Z toward ecliptic north.
- * We map: ecliptic X → scene X, ecliptic Z → scene Z, ecliptic Y → scene Y.
- * For top-down view the camera looks along -Y (scene), so the XZ plane is the
- * visible orbital plane.
+ * J2000 ecliptic axes: X toward vernal equinox, Y 90° along ecliptic, Z = ecliptic north.
+ * We map ecliptic axes 1:1 to scene axes. The camera sits at +Z and looks toward
+ * the origin, so the XY plane (ecliptic plane) is the visible orbital plane.
  */
 export function toScenePosition(pos: Vec3): [number, number, number] {
   const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
