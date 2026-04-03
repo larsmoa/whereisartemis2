@@ -4,6 +4,7 @@ import {
   parseSoeBlocks,
   fetchArtemisAndMoon,
   fetchTrajectory,
+  fetchHorizonsWithRetry,
   EARTH_RADIUS_KM,
   MOON_RADIUS_KM,
   LAUNCH_TIME,
@@ -154,16 +155,126 @@ $$EOE
 });
 
 // ---------------------------------------------------------------------------
+// fetchHorizonsWithRetry
+// ---------------------------------------------------------------------------
+
+describe("fetchHorizonsWithRetry", () => {
+  beforeEach(() => {
+    vi.stubGlobal("fetch", vi.fn());
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
+
+  it("returns response immediately on success", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const mockResponse = { ok: true, status: 200 } as Response;
+    mockFetch.mockResolvedValue(mockResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+    expect(result).toBe(mockResponse);
+  });
+
+  it("retries on 503 and eventually succeeds", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const errorResponse = { ok: false, status: 503, statusText: "Service Unavailable" } as Response;
+    const successResponse = { ok: true, status: 200 } as Response;
+
+    mockFetch
+      .mockResolvedValueOnce(errorResponse)
+      .mockResolvedValueOnce(errorResponse)
+      .mockResolvedValueOnce(successResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(result).toBe(successResponse);
+  });
+
+  it("retries on 429 and eventually succeeds", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const errorResponse = { ok: false, status: 429, statusText: "Too Many Requests" } as Response;
+    const successResponse = { ok: true, status: 200 } as Response;
+
+    mockFetch.mockResolvedValueOnce(errorResponse).mockResolvedValueOnce(successResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(result).toBe(successResponse);
+  });
+
+  it("throws after max retries on 503", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const errorResponse = { ok: false, status: 503, statusText: "Service Unavailable" } as Response;
+
+    mockFetch.mockResolvedValue(errorResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com", undefined, 2);
+    const expectPromise = expect(promise).rejects.toThrow(
+      "Horizons API error: 503 Service Unavailable",
+    );
+    await vi.runAllTimersAsync();
+    await expectPromise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(3); // Initial + 2 retries
+  });
+
+  it("throws immediately on 404 (no retry)", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const errorResponse = { ok: false, status: 404, statusText: "Not Found" } as Response;
+
+    mockFetch.mockResolvedValue(errorResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com");
+    const expectPromise = expect(promise).rejects.toThrow("Horizons API error: 404 Not Found");
+    await vi.runAllTimersAsync();
+    await expectPromise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("retries on network errors and eventually succeeds", async () => {
+    const mockFetch = vi.mocked(fetch);
+    const successResponse = { ok: true, status: 200 } as Response;
+
+    mockFetch
+      .mockRejectedValueOnce(new Error("Network Error"))
+      .mockResolvedValueOnce(successResponse);
+
+    const promise = fetchHorizonsWithRetry("http://example.com");
+    await vi.runAllTimersAsync();
+    const result = await promise;
+
+    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(result).toBe(successResponse);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // fetchTrajectory (mocked fetch)
 // ---------------------------------------------------------------------------
 
 describe("fetchTrajectory", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("returns parsed TrajectoryPoint[] for all epochs", async () => {
@@ -176,7 +287,9 @@ describe("fetchTrajectory", () => {
     } as Response);
 
     // Act
-    const result = await fetchTrajectory("-1024");
+    const promise = fetchTrajectory("-1024");
+    await vi.runAllTimersAsync();
+    const result = await promise;
 
     // Assert
     expect(result).toHaveLength(3);
@@ -193,7 +306,9 @@ describe("fetchTrajectory", () => {
     } as Response);
 
     // Act
-    await fetchTrajectory("-1024");
+    const promise = fetchTrajectory("-1024");
+    await vi.runAllTimersAsync();
+    await promise;
 
     // Assert
     const url = mockFetch.mock.calls[0]?.[0] as string;
@@ -209,7 +324,10 @@ describe("fetchTrajectory", () => {
     } as Response);
 
     // Act / Assert
-    await expect(fetchTrajectory("-1024")).rejects.toThrow("Horizons API error: 503");
+    const promise = fetchTrajectory("-1024");
+    const expectPromise = expect(promise).rejects.toThrow("Horizons API error: 503");
+    await vi.runAllTimersAsync();
+    await expectPromise;
   });
 });
 
@@ -242,10 +360,12 @@ function makeHorizonsResponse(soe: string): string {
 describe("fetchArtemisAndMoon", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
+    vi.useFakeTimers();
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   it("calls fetch twice (spacecraft + moon) and returns parsed bodies", async () => {
@@ -257,7 +377,9 @@ describe("fetchArtemisAndMoon", () => {
     } as Response);
 
     // Act
-    const result = await fetchArtemisAndMoon();
+    const promise = fetchArtemisAndMoon();
+    await vi.runAllTimersAsync();
+    const result = await promise;
 
     // Assert
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -274,7 +396,9 @@ describe("fetchArtemisAndMoon", () => {
     } as Response);
 
     // Act
-    await fetchArtemisAndMoon();
+    const promise = fetchArtemisAndMoon();
+    await vi.runAllTimersAsync();
+    await promise;
 
     // Assert — first call should contain the Artemis body ID
     const firstUrl = mockFetch.mock.calls[0]?.[0] as string;
@@ -290,7 +414,9 @@ describe("fetchArtemisAndMoon", () => {
     } as Response);
 
     // Act
-    await fetchArtemisAndMoon();
+    const promise = fetchArtemisAndMoon();
+    await vi.runAllTimersAsync();
+    await promise;
 
     // Assert — second call should contain the Moon body ID
     const secondUrl = mockFetch.mock.calls[1]?.[0] as string;
@@ -307,8 +433,11 @@ describe("fetchArtemisAndMoon", () => {
     } as Response);
 
     // Act / Assert
-    await expect(fetchArtemisAndMoon()).rejects.toThrow(
+    const promise = fetchArtemisAndMoon();
+    const expectPromise = expect(promise).rejects.toThrow(
       "Horizons API error: 429 Too Many Requests",
     );
+    await vi.runAllTimersAsync();
+    await expectPromise;
   });
 });

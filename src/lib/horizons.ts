@@ -7,6 +7,83 @@ function toHorizonsIso(date: Date): string {
 
 const HORIZONS_API = "https://ssd.jpl.nasa.gov/api/horizons.api";
 
+class Semaphore {
+  private queue: Array<() => void> = [];
+  private activeCount = 0;
+
+  constructor(private maxConcurrent: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.activeCount < this.maxConcurrent) {
+      this.activeCount++;
+      return;
+    }
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    if (this.queue.length > 0) {
+      const resolve = this.queue.shift();
+      if (resolve) resolve();
+    } else {
+      this.activeCount--;
+    }
+  }
+}
+
+const horizonsSemaphore = new Semaphore(2);
+
+export async function fetchHorizonsWithRetry(
+  url: string,
+  options?: RequestInit,
+  retries = 3,
+): Promise<Response> {
+  await horizonsSemaphore.acquire();
+  try {
+    let attempt = 0;
+    while (attempt <= retries) {
+      try {
+        const res = await fetch(url, options);
+        if (res.ok) {
+          return res;
+        }
+        if (res.status === 503 || res.status === 429) {
+          if (attempt === retries) {
+            throw new Error(`Horizons API error: ${res.status} ${res.statusText}`);
+          }
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          attempt++;
+          continue;
+        }
+        // Don't retry other HTTP errors
+        throw new Error(`Horizons API error: ${res.status} ${res.statusText}`);
+      } catch (error) {
+        // If it's an HTTP error we explicitly threw, don't retry it (unless it was 503/429 which we handled above)
+        if (
+          error instanceof Error &&
+          error.message.startsWith("Horizons API error: ") &&
+          !error.message.includes("503") &&
+          !error.message.includes("429")
+        ) {
+          throw error;
+        }
+        if (attempt === retries) {
+          throw error;
+        }
+        const delay = Math.pow(2, attempt) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        attempt++;
+      }
+    }
+    throw new Error("Max retries exceeded");
+  } finally {
+    horizonsSemaphore.release();
+  }
+}
+
 /** Earth equatorial radius in km */
 export const EARTH_RADIUS_KM = 6378.137;
 /** Moon radius in km */
@@ -86,11 +163,7 @@ async function fetchBody(command: string, now: Date): Promise<HorizonsBody> {
   const stopIso = toHorizonsIso(stop);
 
   const url = buildHorizonsUrl(command, startIso, stopIso);
-  const res = await fetch(url, { next: { revalidate: 60 } });
-
-  if (!res.ok) {
-    throw new Error(`Horizons API error: ${res.status} ${res.statusText}`);
-  }
+  const res = await fetchHorizonsWithRetry(url, { next: { revalidate: 60 } });
 
   const json = (await res.json()) as { result: string };
   return parseSoeBlock(json.result);
@@ -209,10 +282,7 @@ export async function fetchTrajectory(
   });
   const url = `${HORIZONS_API}?${params.toString()}`;
 
-  const res = await fetch(url, { next: { revalidate: 300 } });
-  if (!res.ok) {
-    throw new Error(`Horizons API error: ${res.status} ${res.statusText}`);
-  }
+  const res = await fetchHorizonsWithRetry(url, { next: { revalidate: 300 } });
 
   const json = (await res.json()) as { result: string };
   return parseSoeBlocks(json.result);
