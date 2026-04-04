@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { toScenePosition } from "./sceneCoords";
 
 const EARTH_RADIUS_KM = 6378.137;
+const EARTH_SCENE_RADIUS = 5.2;
 
 describe("toScenePosition", () => {
   it("maps the origin to [0, 0, 0]", () => {
@@ -38,16 +39,16 @@ describe("toScenePosition", () => {
     expect(posX).toBeCloseTo(-negX, 10);
   });
 
-  it("log-scale: Earth surface (r = EARTH_RADIUS_KM) maps to log10(2)*SCALE ≈ 6.02", () => {
+  it("linear scale: Earth surface (r = EARTH_RADIUS_KM) maps to EARTH_SCENE_RADIUS", () => {
     const [sx] = toScenePosition({ x: EARTH_RADIUS_KM, y: 0, z: 0 });
-    // log10(1 + 1) * 20 = log10(2) * 20 ≈ 6.02
-    expect(sx).toBeCloseTo(Math.log10(2) * 20, 4);
+    expect(sx).toBeCloseTo(EARTH_SCENE_RADIUS, 6);
   });
 
-  it("log-scale: Moon distance (~384400 km) stays under 100 scene units", () => {
+  it("linear scale: Moon distance (~384400 km) is ~60 Earth radii in scene units", () => {
     const [sx] = toScenePosition({ x: 384400, y: 0, z: 0 });
-    expect(sx).toBeLessThan(100);
-    expect(sx).toBeGreaterThan(0);
+    const expected = (384400 / EARTH_RADIUS_KM) * EARTH_SCENE_RADIUS;
+    expect(sx).toBeCloseTo(expected, 2);
+    expect(sx).toBeGreaterThan(250);
   });
 
   it("Artemis at ~96000 km is closer to Earth than Moon at ~384000 km", () => {
@@ -56,11 +57,10 @@ describe("toScenePosition", () => {
     expect(ax).toBeLessThan(mx);
   });
 
-  it("Artemis at ~96000 km is roughly 1/2 the scene distance of Moon at ~384000 km", () => {
+  it("linear scale: scene distances are proportional to km", () => {
     const [ax] = toScenePosition({ x: 96000, y: 0, z: 0 });
     const [mx] = toScenePosition({ x: 384000, y: 0, z: 0 });
     const ratio = ax / mx;
-    expect(ratio).toBeGreaterThan(0.5);
-    expect(ratio).toBeLessThan(0.85);
+    expect(ratio).toBeCloseTo(96000 / 384000, 5);
   });
 });

@@ -25,7 +25,8 @@ function generateStarPositions(count: number): Float32Array {
   for (let i = 0; i < count; i++) {
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    const r = 300 + Math.random() * 100;
+    /* Beyond Earth–Moon span (~313 scene units) so stars sit in the background */
+    const r = 520 + Math.random() * 280;
     arr[i * 3] = r * Math.sin(phi) * Math.cos(theta);
     arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta);
     arr[i * 3 + 2] = r * Math.cos(phi);
@@ -34,6 +35,10 @@ function generateStarPositions(count: number): Float32Array {
 }
 
 const STAR_POSITIONS = generateStarPositions(4000);
+
+/** Placeholders while ephemeris is loading — typical Earth–Moon distance and mid-transfer km */
+const MOON_PLACEHOLDER = toScenePosition({ x: 384_400, y: 0, z: 0 });
+const ARTEMIS_PLACEHOLDER = toScenePosition({ x: 96_000, y: 0, z: 0 });
 
 /** Simple point-based star field — sizeAttenuation disabled for orthographic camera */
 function PointStars(): React.JSX.Element {
@@ -73,13 +78,9 @@ function SceneContents({
   plannedTrajectory?: ScenePoint[] | null | undefined;
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
 }): React.JSX.Element {
-  const moonPos = data
-    ? toScenePosition(data.moon.position)
-    : ([30, 0, 0] as [number, number, number]);
+  const moonPos = data ? toScenePosition(data.moon.position) : MOON_PLACEHOLDER;
 
-  const artemisPos = data
-    ? toScenePosition(data.spacecraft.position)
-    : ([5, 0, 0] as [number, number, number]);
+  const artemisPos = data ? toScenePosition(data.spacecraft.position) : ARTEMIS_PLACEHOLDER;
 
   return (
     <>
@@ -142,9 +143,9 @@ export function SpaceScene({
       camera={{
         position: [0, 0, 100],
         up: [0, 1, 0],
-        zoom: 10,
+        zoom: 1.15,
         near: 0.1,
-        far: 1000,
+        far: 2000,
       }}
     >
       <SceneContents

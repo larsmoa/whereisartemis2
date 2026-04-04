@@ -1,34 +1,30 @@
 import type { Vec3 } from "@/types";
 
 /**
- * Earth radius in km — used as the log-scale normalizer.
- * All scene radii are expressed relative to this value (Earth = 1.0 scene unit).
+ * Earth equatorial radius (km) — matches WGS84 / Horizons conventions.
  */
 const EARTH_RADIUS_KM = 6378.137;
 
 /**
- * Controls how spread out the scene is.
- * log10(1 + 384400/6378) * SCALE ≈ 1.78 * SCALE → Moon at ~36 scene units when SCALE=20.
+ * Earth sphere radius in Three.js units — must stay in sync with `EarthMesh`.
+ * Linear mapping: scene distance = (r_km / EARTH_RADIUS_KM) * EARTH_SCENE_RADIUS,
+ * so the globe surface sits at the correct scale relative to trajectories.
  */
-const SCALE = 20;
+const EARTH_SCENE_RADIUS = 5.2;
 
 /**
- * Map a real-world radial distance (km from Earth) to a scene distance using a
- * logarithmic scale: log10(1 + r/R) * SCALE.
- *
- * Applied to the *magnitude* of the position vector, not per-axis, so the
- * direction (orbital geometry) is preserved exactly.
+ * Map radial distance from Earth (km) to scene radius (linear, proportional to km).
+ * Preserves true eccentricity of transfer orbits (unlike log compression).
  */
-function logMapMagnitude(r: number): number {
-  return Math.log10(1 + r / EARTH_RADIUS_KM) * SCALE;
+function mapMagnitude(r: number): number {
+  return (r / EARTH_RADIUS_KM) * EARTH_SCENE_RADIUS;
 }
 
 /**
  * Convert an Earth-centred J2000 ecliptic position (km) into scene units.
  *
- * The log scale is applied to the vector magnitude so that direction is
- * preserved — i.e. the angular position of each body around Earth is correct.
- * Only the radial distance is compressed.
+ * Linear scaling is applied to the vector magnitude so that direction is
+ * preserved and radial ratios match physical distances (elliptical TLI arcs).
  *
  * J2000 ecliptic axes: X toward vernal equinox, Y 90° along ecliptic, Z = ecliptic north.
  * We map ecliptic axes 1:1 to scene axes. The camera sits at +Z and looks toward
@@ -38,7 +34,7 @@ export function toScenePosition(pos: Vec3): [number, number, number] {
   const r = Math.sqrt(pos.x * pos.x + pos.y * pos.y + pos.z * pos.z);
   if (r === 0) return [0, 0, 0];
 
-  const sceneR = logMapMagnitude(r);
+  const sceneR = mapMagnitude(r);
   const scale = sceneR / r;
   return [pos.x * scale, pos.y * scale, pos.z * scale];
 }
