@@ -29,7 +29,7 @@ export function EarthMesh(): React.JSX.Element {
     <group position={[0, 0, 0]}>
       {/* Earth Sphere */}
       <mesh ref={earthRef}>
-        <sphereGeometry args={[4.0, 64, 64]} />
+        <sphereGeometry args={[5.2, 64, 64]} />
         <meshStandardMaterial
           map={colorMap ?? null}
           normalMap={normalMap ?? null}
@@ -41,7 +41,7 @@ export function EarthMesh(): React.JSX.Element {
 
       {/* Cloud Layer */}
       <mesh ref={cloudsRef}>
-        <sphereGeometry args={[4.05, 64, 64]} />
+        <sphereGeometry args={[5.265, 64, 64]} />
         <meshStandardMaterial
           map={cloudsMap ?? null}
           transparent={true}

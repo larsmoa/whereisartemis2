@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { EarthMesh } from "./EarthMesh";
@@ -97,7 +98,11 @@ function SceneContents({
       {plannedTrajectory && (
         <TrajectoryLine points={plannedTrajectory} color="#4488ff" opacity={0.3} dashed />
       )}
-      {data && <ArtemisMesh position={artemisPos} />}
+      {data && (
+        <React.Suspense fallback={null}>
+          <ArtemisMesh position={artemisPos} />
+        </React.Suspense>
+      )}
       {/*
        * Lock polar angle to π/2 so the camera stays exactly top-down.
        * This allows panning (drag) and zooming (scroll) but not vertical tilt.

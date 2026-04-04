@@ -15,8 +15,8 @@ export function MoonMesh({ position }: MoonMeshProps): React.JSX.Element {
 
   return (
     <mesh position={position}>
-      {/* Radius 1.09 keeps the real Moon/Earth ratio: 4.0 * 0.273 ≈ 1.09 */}
-      <sphereGeometry args={[1.09, 64, 64]} />
+      {/* Radius 1.42 keeps the real Moon/Earth ratio: 5.2 * 0.273 ≈ 1.42 */}
+      <sphereGeometry args={[1.42, 64, 64]} />
       <meshStandardMaterial
         map={moonTexture}
         bumpMap={moonTexture}
