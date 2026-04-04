@@ -86,22 +86,14 @@ function SkeletonCard(): React.JSX.Element {
   );
 }
 
-function interleave(articles: NasaFeedItem[], media: NasaFeedItem[]): NasaFeedItem[] {
-  const result: NasaFeedItem[] = [];
-  const maxLen = Math.max(articles.length, media.length);
-  for (let i = 0; i < maxLen; i++) {
-    const article = articles[i];
-    const medium = media[i];
-    if (article !== undefined) result.push(article);
-    if (medium !== undefined) result.push(medium);
-  }
-  return result;
-}
-
 export function MissionFeed(): React.JSX.Element {
   const { data, isPending, error } = useNasaFeed();
 
-  const items = data ? interleave(data.articles, data.media) : [];
+  const items = data
+    ? [...data.articles, ...data.media].sort(
+        (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+      )
+    : [];
 
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
