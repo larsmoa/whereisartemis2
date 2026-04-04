@@ -51,7 +51,7 @@ export default function Home(): React.JSX.Element {
 
       {/* 3D Scene — grid row "1fr" means it takes all remaining height */}
       <div className="relative overflow-hidden">
-        <div className="pointer-events-auto absolute left-4 right-4 top-4 z-20 sm:left-6 sm:right-6">
+        <div className="pointer-events-auto absolute bottom-4 left-4 z-20">
           <SceneViewToggle value={sceneView} onChange={setSceneView} />
         </div>
         {isPending && (
