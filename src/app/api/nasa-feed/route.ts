@@ -1,7 +1,7 @@
 import { fetchNasaFeed } from "@/lib/nasa-feed";
 import type { NasaFeed } from "@/lib/nasa-feed";
 
-export const revalidate = 3600;
+export const revalidate = 600;
 
 export async function GET(): Promise<Response> {
   try {

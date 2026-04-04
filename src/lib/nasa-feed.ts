@@ -18,7 +18,16 @@ export interface NasaFeed {
 }
 
 const NASA_IMAGES_API = "https://images-api.nasa.gov/search";
-const NASA_RSS_URL = "https://www.nasa.gov/rss/dyn/artemis.rss";
+// NASA Missions blog — updated multiple times daily during active missions
+const NASA_MISSIONS_RSS_URL = "https://www.nasa.gov/blogs/missions/feed/";
+// Only show items tagged with these Artemis categories
+const ARTEMIS_CATEGORIES = new Set(["Artemis", "Artemis 2", "Artemis II"]);
+
+/** Extract the first <img src="..."> URL from an HTML string */
+function extractFirstImageUrl(html: string): string | null {
+  const match = /src="(https:\/\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i.exec(html);
+  return match?.[1] ?? null;
+}
 
 interface NasaImageApiItem {
   data: Array<{
@@ -82,17 +91,23 @@ async function fetchNasaMedia(): Promise<NasaFeedItem[]> {
 async function fetchNasaArticles(): Promise<NasaFeedItem[]> {
   const parser = new Parser({
     customFields: {
-      item: [["media:thumbnail", "mediaThumbnail"]],
+      item: [["content:encoded", "contentEncoded"]],
     },
   });
 
-  const feed = await parser.parseURL(NASA_RSS_URL);
+  const feed = await parser.parseURL(NASA_MISSIONS_RSS_URL);
 
   return feed.items
-    .filter((item) => item.title && item.link)
+    .filter((item) => {
+      if (!item.title || !item.link) return false;
+      const categories = (item.categories ?? []) as string[];
+      return categories.some((c) => ARTEMIS_CATEGORIES.has(c));
+    })
     .map((item, index): NasaFeedItem => {
-      const itemRecord = item as { mediaThumbnail?: { $?: { url?: string } } };
-      const thumbnailUrl = itemRecord.mediaThumbnail?.$?.url ?? null;
+      const itemRecord = item as { contentEncoded?: string };
+      const thumbnailUrl = itemRecord.contentEncoded
+        ? extractFirstImageUrl(itemRecord.contentEncoded)
+        : null;
 
       return {
         id: item.guid ?? item.link ?? `rss-${index}`,

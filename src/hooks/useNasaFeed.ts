@@ -21,7 +21,7 @@ export function useNasaFeed(): UseQueryResult<NasaFeed, Error> {
   return useQuery({
     queryKey: NASA_FEED_QUERY_KEY,
     queryFn: fetchNasaFeedData,
-    staleTime: 3600 * 1000,
+    staleTime: 600 * 1000,
     refetchInterval: false,
   });
 }
