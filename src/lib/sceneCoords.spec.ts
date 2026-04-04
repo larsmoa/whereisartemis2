@@ -1,8 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { toScenePosition } from "./sceneCoords";
+import { EARTH_SCENE_RADIUS, toScenePosition } from "./sceneCoords";
 
 const EARTH_RADIUS_KM = 6378.137;
-const EARTH_SCENE_RADIUS = 5.2;
 
 describe("toScenePosition", () => {
   it("maps the origin to [0, 0, 0]", () => {

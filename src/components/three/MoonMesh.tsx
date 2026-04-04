@@ -1,25 +1,17 @@
 "use client";
 
 import { useTexture } from "@react-three/drei";
+import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
 
 interface MoonMeshProps {
   position: [number, number, number];
 }
 
-/** WGS84 Earth radius (km) — matches `@/lib/horizons` / `sceneCoords`. */
-const EARTH_RADIUS_KM = 6378.137;
-/** Moon mean radius (km) — matches `@/lib/horizons`. */
-const MOON_RADIUS_KM = 1737.4;
-
-/** Real Moon/Earth radius ratio in scene units — keep in sync with `EarthMesh` radius 5.2. */
-const MOON_RADIUS_SCENE = 5.2 * (MOON_RADIUS_KM / EARTH_RADIUS_KM);
-
 /**
- * With linear ephemeris scaling, the Moon sits ~300+ units away; a physically
- * correct radius (~1.4) is sub-pixel. Exaggerate for visibility (orbit lines
- * stay accurate — only the mesh grows).
+ * Moon disc — still exaggerated vs the real ~0.27 Earth radii so it reads at
+ * ~300 scene units, but capped below Earth: Earth diameter = 2× Moon diameter.
  */
-const MOON_VISUAL_EXAGGERATION = 5;
+const MOON_RADIUS_SCENE = EARTH_SCENE_RADIUS / 2;
 
 /**
  * Moon — textured sphere.
@@ -27,7 +19,7 @@ const MOON_VISUAL_EXAGGERATION = 5;
 export function MoonMesh({ position }: MoonMeshProps): React.JSX.Element {
   const moonTexture = useTexture("/textures/moon.jpg");
 
-  const radius = MOON_RADIUS_SCENE * MOON_VISUAL_EXAGGERATION;
+  const radius = MOON_RADIUS_SCENE;
 
   return (
     <mesh position={position}>

@@ -4,10 +4,11 @@ import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import type { Mesh } from "three";
+import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
 
 /**
  * Earth — realistic sphere at the scene origin with textures and clouds.
- * Radius 1.0 is the reference unit; all other bodies scale from this.
+ * `EARTH_SCENE_RADIUS` is the reference for trajectory scaling and Moon size.
  */
 export function EarthMesh(): React.JSX.Element {
   const earthRef = useRef<Mesh>(null);
@@ -29,7 +30,7 @@ export function EarthMesh(): React.JSX.Element {
     <group position={[0, 0, 0]}>
       {/* Earth Sphere */}
       <mesh ref={earthRef}>
-        <sphereGeometry args={[5.2, 64, 64]} />
+        <sphereGeometry args={[EARTH_SCENE_RADIUS, 64, 64]} />
         <meshStandardMaterial
           map={colorMap ?? null}
           normalMap={normalMap ?? null}
@@ -41,7 +42,7 @@ export function EarthMesh(): React.JSX.Element {
 
       {/* Cloud Layer */}
       <mesh ref={cloudsRef}>
-        <sphereGeometry args={[5.265, 64, 64]} />
+        <sphereGeometry args={[EARTH_SCENE_RADIUS + 0.065, 64, 64]} />
         <meshStandardMaterial
           map={cloudsMap ?? null}
           transparent={true}

@@ -10,7 +10,7 @@ const EARTH_RADIUS_KM = 6378.137;
  * Linear mapping: scene distance = (r_km / EARTH_RADIUS_KM) * EARTH_SCENE_RADIUS,
  * so the globe surface sits at the correct scale relative to trajectories.
  */
-const EARTH_SCENE_RADIUS = 5.2;
+export const EARTH_SCENE_RADIUS = 5.2;
 
 /**
  * Map radial distance from Earth (km) to scene radius (linear, proportional to km).
