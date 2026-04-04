@@ -12,14 +12,14 @@ export interface OrthographicEyePreset {
 }
 
 /**
- * Top: +Z eye; up is −X so the map is rotated 90° CCW vs ecliptic north (+Y) up.
+ * Top: +Z eye; up is +X so the map is rotated 90° CCW vs ecliptic north (+Y) up.
  * Side: +X eye, ecliptic north (+Z) up — Earth–Moon line edge-on.
  */
 export function getOrthographicEyeForView(view: OrthographicMapView): OrthographicEyePreset {
   if (view === "top") {
     return {
       position: [0, 0, ORTHO_CAMERA_DISTANCE],
-      up: [-1, 0, 0],
+      up: [1, 0, 0],
     };
   }
   return {
