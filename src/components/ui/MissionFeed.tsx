@@ -1,11 +1,24 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { useNasaFeed } from "@/hooks/useNasaFeed";
 import type { NasaFeedItem, NasaFeedItemType } from "@/lib/nasa-feed";
 
-type FeedTab = "news" | "gallery";
+const TYPE_LABEL: Record<NasaFeedItemType, string | null> = {
+  article: null,
+  image: "Photo",
+  video: "Video",
+};
+
+function TypeBadge({ type }: { type: NasaFeedItemType }): React.JSX.Element | null {
+  const label = TYPE_LABEL[type];
+  if (!label) return null;
+  return (
+    <span className="rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 backdrop-blur-sm">
+      {label}
+    </span>
+  );
+}
 
 function FeedCard({ item }: { item: NasaFeedItem }): React.JSX.Element {
   return (
@@ -15,7 +28,7 @@ function FeedCard({ item }: { item: NasaFeedItem }): React.JSX.Element {
       rel="noopener noreferrer"
       className="group flex flex-col overflow-hidden rounded-xl border border-white/10 bg-white/5 transition-colors hover:border-white/20 hover:bg-white/10"
     >
-      {item.thumbnailUrl && (
+      {item.thumbnailUrl ? (
         <div className="relative aspect-video w-full overflow-hidden bg-zinc-900">
           <Image
             src={item.thumbnailUrl}
@@ -34,6 +47,13 @@ function FeedCard({ item }: { item: NasaFeedItem }): React.JSX.Element {
               </div>
             </div>
           )}
+          <div className="absolute left-2 top-2">
+            <TypeBadge type={item.type} />
+          </div>
+        </div>
+      ) : (
+        <div className="flex aspect-video w-full items-center justify-center bg-zinc-900">
+          <span className="text-xs text-zinc-600">No image</span>
         </div>
       )}
       <div className="flex flex-1 flex-col gap-1.5 p-3">
@@ -66,68 +86,29 @@ function SkeletonCard(): React.JSX.Element {
   );
 }
 
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}): React.JSX.Element {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-widest transition-colors ${
-        active ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
-function FeedTypeTag({ type }: { type: NasaFeedItemType }): React.JSX.Element | null {
-  if (type === "article") return null;
-  return (
-    <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-500">
-      {type}
-    </span>
-  );
+function interleave(articles: NasaFeedItem[], media: NasaFeedItem[]): NasaFeedItem[] {
+  const result: NasaFeedItem[] = [];
+  const maxLen = Math.max(articles.length, media.length);
+  for (let i = 0; i < maxLen; i++) {
+    const article = articles[i];
+    const medium = media[i];
+    if (article !== undefined) result.push(article);
+    if (medium !== undefined) result.push(medium);
+  }
+  return result;
 }
 
 export function MissionFeed(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<FeedTab>("news");
   const { data, isPending, error } = useNasaFeed();
 
-  const items = activeTab === "news" ? (data?.articles ?? []) : (data?.media ?? []);
+  const items = data ? interleave(data.articles, data.media) : [];
 
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
       <div className="px-4 pt-4 pb-2 sm:px-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
-            Mission Coverage
-          </h2>
-          <div className="flex items-center gap-1">
-            <TabButton
-              active={activeTab === "news"}
-              onClick={() => {
-                setActiveTab("news");
-              }}
-            >
-              News
-            </TabButton>
-            <TabButton
-              active={activeTab === "gallery"}
-              onClick={() => {
-                setActiveTab("gallery");
-              }}
-            >
-              Gallery
-            </TabButton>
-          </div>
-        </div>
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
+          Mission Coverage
+        </h2>
       </div>
 
       <div className="px-4 pb-4 sm:px-6">
@@ -152,12 +133,7 @@ export function MissionFeed(): React.JSX.Element {
         {!isPending && items.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {items.map((item) => (
-              <div key={item.id} className="relative">
-                <FeedCard item={item} />
-                <div className="absolute left-2 top-2">
-                  <FeedTypeTag type={item.type} />
-                </div>
-              </div>
+              <FeedCard key={item.id} item={item} />
             ))}
           </div>
         )}
