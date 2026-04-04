@@ -6,10 +6,14 @@ interface StatCardProps {
 
 export function StatCard({ label, value, sub }: StatCardProps): React.JSX.Element {
   return (
-    <div className="flex flex-col gap-1 rounded-xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm">
-      <span className="text-xs font-semibold uppercase tracking-widest text-zinc-400">{label}</span>
-      <span className="font-mono text-2xl font-bold text-white tabular-nums">{value}</span>
-      {sub && <span className="text-xs text-zinc-500">{sub}</span>}
+    <div className="flex flex-col gap-0.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 backdrop-blur-sm sm:gap-1 sm:px-5 sm:py-4">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-400 sm:text-xs">
+        {label}
+      </span>
+      <span className="font-mono text-lg font-bold text-white tabular-nums sm:text-2xl">
+        {value}
+      </span>
+      {sub && <span className="hidden text-xs text-zinc-500 sm:block">{sub}</span>}
     </div>
   );
 }
