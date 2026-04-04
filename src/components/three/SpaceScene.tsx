@@ -274,7 +274,7 @@ function SceneContentsFree({
 
 /**
  * J2000 ecliptic: X = vernal equinox, Y = 90° along ecliptic, Z = ecliptic north.
- * Top view: camera on +Z, up +Y. Side view: camera on +X, up +Z (edge-on ecliptic).
+ * Top view: camera on +Z, up −X (map rotated 90° CCW vs north-up). Side view: camera on +X, up +Z (edge-on ecliptic).
  * Free view: perspective camera orbiting the capsule.
  */
 export function SpaceScene({

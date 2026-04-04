@@ -7,7 +7,7 @@ describe("getOrthographicEyeForView", () => {
       "top",
       {
         position: [0, 0, 100] as const,
-        up: [0, 1, 0] as const,
+        up: [-1, 0, 0] as const,
       },
     ],
     [
