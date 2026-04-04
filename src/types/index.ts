@@ -26,6 +26,9 @@ export interface TrajectoryPoint {
 /** A single point along the spacecraft trajectory in scene-space coordinates */
 export type ScenePoint = [number, number, number];
 
+/** Camera mode for the mission 3D view */
+export type SceneView = "top" | "side" | "free";
+
 export interface ArtemisData {
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
