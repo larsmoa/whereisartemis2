@@ -9,6 +9,8 @@ import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
 import { SceneViewToggle } from "@/components/ui/SceneViewToggle";
+import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
+import { MissionFeed } from "@/components/ui/MissionFeed";
 import type { SceneView } from "@/types";
 import { formatKm, formatSpeed, formatElapsed, formatDelay } from "@/lib/format";
 
@@ -198,17 +200,30 @@ export default function Home(): React.JSX.Element {
           <ScenePanel {...scenePanelProps} isMobile={true} />
         </div>
         <StatsSection {...statsProps} />
+        {/* YouTube embed: full-width 16:9 below stats */}
+        <div className="border-t border-white/10">
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <YouTubeEmbed className="absolute inset-0 border-l-0" />
+          </div>
+        </div>
+        <MissionFeed />
         <PageFooter />
       </div>
 
-      {/* Desktop: fixed full-viewport grid */}
-      <div
-        className="hidden bg-black text-white sm:grid"
-        style={{ gridTemplateRows: "auto 1fr auto auto", height: "100dvh" }}
-      >
-        <PageHeader lastUpdated={lastUpdated} />
-        <ScenePanel {...scenePanelProps} isMobile={false} />
-        <StatsSection {...statsProps} />
+      {/* Desktop: tracker section fills viewport, feed scrolls below */}
+      <div className="hidden bg-black text-white sm:block">
+        {/* Top tracker section: fixed to viewport height */}
+        <div className="grid" style={{ gridTemplateRows: "auto 1fr auto", height: "100dvh" }}>
+          <PageHeader lastUpdated={lastUpdated} />
+          {/* Scene row: 2:1 split between 3D scene and YouTube */}
+          <div className="grid min-h-0" style={{ gridTemplateColumns: "2fr 1fr" }}>
+            <ScenePanel {...scenePanelProps} isMobile={false} />
+            <YouTubeEmbed />
+          </div>
+          <StatsSection {...statsProps} />
+        </div>
+        {/* Mission feed: scrolls below the tracker */}
+        <MissionFeed />
         <PageFooter />
       </div>
     </>
