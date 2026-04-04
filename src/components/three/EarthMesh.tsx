@@ -31,9 +31,9 @@ export function EarthMesh(): React.JSX.Element {
       <mesh ref={earthRef}>
         <sphereGeometry args={[4.0, 64, 64]} />
         <meshStandardMaterial
-          map={colorMap}
-          normalMap={normalMap}
-          roughnessMap={specularMap}
+          map={colorMap ?? null}
+          normalMap={normalMap ?? null}
+          roughnessMap={specularMap ?? null}
           metalness={0.1}
           roughness={0.8}
         />
@@ -43,7 +43,7 @@ export function EarthMesh(): React.JSX.Element {
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[4.05, 64, 64]} />
         <meshStandardMaterial
-          map={cloudsMap}
+          map={cloudsMap ?? null}
           transparent={true}
           opacity={0.8}
           blending={2} // Additive blending for clouds

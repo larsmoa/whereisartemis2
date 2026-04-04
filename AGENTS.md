@@ -122,9 +122,6 @@ All 3D components live in `src/components/three/` and **must** have `"use client
 
 - Import R3F or Three.js in Server Components — it will crash the build.
 - Put canvas state (camera position, object refs) in global React state; use R3F's own state via `useThree`.
-- Use `@react-three/fiber` version `^9` — this project uses the `@alpha` version for React 19 compatibility.
-
-**Peer dependency note:** `@react-three/drei` currently requires `@react-three/fiber@^9` but is used here with `@react-three/fiber@alpha` (v10). This is expected and intentional — the packages are compatible at runtime.
 
 ---
 

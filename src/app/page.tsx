@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
@@ -63,14 +64,16 @@ export default function Home(): React.JSX.Element {
             </div>
           </div>
         )}
-        <SpaceScene
-          data={data ?? null}
-          trajectory={trajectory ?? null}
-          moonTrajectory={moonTrajectory ?? null}
-          plannedTrajectory={plannedTrajectory ?? null}
-          plannedMoonTrajectory={plannedMoonTrajectory ?? null}
-          className="h-full w-full"
-        />
+        <Suspense>
+          <SpaceScene
+            data={data ?? null}
+            trajectory={trajectory ?? null}
+            moonTrajectory={moonTrajectory ?? null}
+            plannedTrajectory={plannedTrajectory ?? null}
+            plannedMoonTrajectory={plannedMoonTrajectory ?? null}
+            className="h-full w-full"
+          />
+        </Suspense>
         {/* Drag hint overlay */}
         <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-xs text-zinc-500 backdrop-blur-sm">
           Drag to pan · Scroll to zoom
