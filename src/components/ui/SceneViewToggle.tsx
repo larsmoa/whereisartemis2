@@ -13,7 +13,7 @@ export interface SceneViewToggleProps {
 
 type IconProps = { className?: string };
 
-/** Top view — circle with crosshairs (classic overhead map / plan). */
+/** Top view — Z-axis arrow pointing toward the viewer (foreshortened axis dot + radiating ticks). */
 function IconTopView({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -23,51 +23,51 @@ function IconTopView({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
-      {/* horizontal crosshair */}
-      <line
-        x1="4"
-        y1="12"
-        x2="8"
-        y2="12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <line
-        x1="16"
-        y1="12"
-        x2="20"
-        y2="12"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      {/* vertical crosshair */}
+      {/* four radiating ticks at 45° */}
       <line
         x1="12"
-        y1="4"
-        x2="12"
-        y2="8"
+        y1="12"
+        x2="6.5"
+        y2="6.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.75"
         strokeLinecap="round"
       />
       <line
         x1="12"
-        y1="16"
-        x2="12"
-        y2="20"
+        y1="12"
+        x2="17.5"
+        y2="6.5"
         stroke="currentColor"
-        strokeWidth="2"
+        strokeWidth="1.75"
         strokeLinecap="round"
       />
+      <line
+        x1="12"
+        y1="12"
+        x2="6.5"
+        y2="17.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      <line
+        x1="12"
+        y1="12"
+        x2="17.5"
+        y2="17.5"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+      {/* axis dot coming toward viewer */}
+      <circle cx="12" cy="12" r="3.5" stroke="currentColor" strokeWidth="2" />
       <circle cx="12" cy="12" r="1.5" fill="currentColor" />
     </svg>
   );
 }
 
-/** Side view — two stacked horizontal bars (elevation / horizon profile). */
+/** Side view — X/Y grid with a bold horizon line (ecliptic edge-on). */
 function IconSideView({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -77,35 +77,63 @@ function IconSideView({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      {/* upper bar */}
-      <rect
-        x="3"
-        y="6"
-        width="18"
-        height="5"
-        rx="1.5"
+      {/* vertical grid lines */}
+      <line
+        x1="8"
+        y1="4"
+        x2="8"
+        y2="20"
         stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.35"
       />
-      {/* lower bar (horizon / ground) */}
-      <rect
-        x="3"
-        y="14"
-        width="18"
-        height="4"
-        rx="1.5"
-        fill="currentColor"
-        opacity="0.25"
+      <line
+        x1="16"
+        y1="4"
+        x2="16"
+        y2="20"
         stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+      {/* horizontal grid lines */}
+      <line
+        x1="4"
+        y1="8"
+        x2="20"
+        y2="8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+      <line
+        x1="4"
+        y1="16"
+        x2="20"
+        y2="16"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        opacity="0.35"
+      />
+      {/* bold horizon / ecliptic line */}
+      <line
+        x1="3"
+        y1="12"
+        x2="21"
+        y2="12"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        strokeLinecap="round"
       />
     </svg>
   );
 }
 
-/** Free orbit — compass rose with four cardinal points (navigate freely). */
+/** Free orbit — isometric cube (3-D perspective / free navigation). */
 function IconFreeOrbit({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -115,46 +143,29 @@ function IconFreeOrbit({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      {/* outer ring */}
-      <circle
-        cx="12"
-        cy="12"
-        r="9"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeDasharray="3 2.5"
-      />
-      {/* N pointer (filled) */}
-      <path d="M12 3 L14 10 L12 8.5 L10 10 Z" fill="currentColor" />
-      {/* S pointer (outline) */}
+      {/* top face */}
       <path
-        d="M12 21 L14 14 L12 15.5 L10 14 Z"
+        d="M12 3 L20 7.5 L12 12 L4 7.5 Z"
         stroke="currentColor"
-        strokeWidth="1.2"
+        strokeWidth="1.75"
         strokeLinejoin="round"
-        fill="none"
       />
-      {/* W & E ticks */}
-      <line
-        x1="3"
-        y1="12"
-        x2="5.5"
-        y2="12"
+      {/* left face */}
+      <path
+        d="M4 7.5 L4 16.5 L12 21 L12 12 Z"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+        opacity="0.55"
       />
-      <line
-        x1="18.5"
-        y1="12"
-        x2="21"
-        y2="12"
+      {/* right face */}
+      <path
+        d="M20 7.5 L20 16.5 L12 21 L12 12 Z"
         stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+        opacity="0.8"
       />
-      {/* centre dot */}
-      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
     </svg>
   );
 }
