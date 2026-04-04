@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { type ComponentRef, useLayoutEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { EarthMesh } from "./EarthMesh";
@@ -9,6 +9,8 @@ import { ArtemisMesh } from "./ArtemisMesh";
 import { TrajectoryLine } from "./TrajectoryLine";
 import { toScenePosition } from "@/lib/sceneCoords";
 import type { ArtemisData, ScenePoint } from "@/types";
+
+type OrbitControlsHandle = ComponentRef<typeof OrbitControls>;
 
 interface SpaceSceneProps {
   data: ArtemisData | null;
@@ -35,10 +37,6 @@ function generateStarPositions(count: number): Float32Array {
 }
 
 const STAR_POSITIONS = generateStarPositions(4000);
-
-/** Placeholders while ephemeris is loading — typical Earth–Moon distance and mid-transfer km */
-const MOON_PLACEHOLDER = toScenePosition({ x: 384_400, y: 0, z: 0 });
-const ARTEMIS_PLACEHOLDER = toScenePosition({ x: 96_000, y: 0, z: 0 });
 
 /** Simple point-based star field — sizeAttenuation disabled for orthographic camera */
 function PointStars(): React.JSX.Element {
@@ -78,9 +76,27 @@ function SceneContents({
   plannedTrajectory?: ScenePoint[] | null | undefined;
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
 }): React.JSX.Element {
-  const moonPos = data ? toScenePosition(data.moon.position) : MOON_PLACEHOLDER;
+  const moonX = data?.moon.position.x ?? 384_400;
+  const moonY = data?.moon.position.y ?? 0;
+  const moonZ = data?.moon.position.z ?? 0;
+  const craftX = data?.spacecraft.position.x ?? 96_000;
+  const craftY = data?.spacecraft.position.y ?? 0;
+  const craftZ = data?.spacecraft.position.z ?? 0;
 
-  const artemisPos = data ? toScenePosition(data.spacecraft.position) : ARTEMIS_PLACEHOLDER;
+  const moonPos = toScenePosition({ x: moonX, y: moonY, z: moonZ });
+  const artemisPos = toScenePosition({ x: craftX, y: craftY, z: craftZ });
+
+  const orbitRef = useRef<OrbitControlsHandle>(null);
+
+  useLayoutEffect(() => {
+    const ctrl = orbitRef.current;
+    if (!ctrl) return;
+    const [mx, my, mz] = toScenePosition({ x: moonX, y: moonY, z: moonZ });
+    /* Earth at origin; center the orthographic view between Earth and Moon so
+     * both stay in frame on narrow aspect ratios (linear scale pushes Moon far). */
+    ctrl.target.set(mx / 2, my / 2, mz / 2);
+    ctrl.update();
+  }, [moonX, moonY, moonZ]);
 
   return (
     <>
@@ -111,6 +127,7 @@ function SceneContents({
        * azimuth rotation (spin around Y axis) while clamping polar to 90°.
        */}
       <OrbitControls
+        ref={orbitRef}
         enablePan={true}
         enableZoom={true}
         enableRotate={false}

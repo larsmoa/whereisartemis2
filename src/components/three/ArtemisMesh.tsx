@@ -51,9 +51,9 @@ export function ArtemisMesh({ position }: ArtemisMeshProps): React.JSX.Element {
     }
   }, [geometry]);
 
-  // The STL bounding box is roughly 16x10x16 units.
-  // To make it ~3.66 units in size (2/3 of 5.5), we scale by 3.66 / 16 ≈ 0.226
-  const fixedScale = 0.226;
+  // The STL bounding box is roughly 16x10x16 units. Base scale ≈0.226 for ~3.7
+  // scene units near Earth; multiply so the craft stays visible at lunar distance.
+  const fixedScale = 0.226 * 4;
 
   return (
     <group position={position}>
