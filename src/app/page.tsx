@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
@@ -8,6 +8,8 @@ import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
 import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
+import { SceneViewToggle } from "@/components/ui/SceneViewToggle";
+import type { SceneView } from "@/types";
 import { formatKm, formatSpeed, formatElapsed, formatDelay } from "@/lib/format";
 
 // SpaceScene uses WebGL — load client-side only, no SSR
@@ -24,6 +26,7 @@ export default function Home(): React.JSX.Element {
   const { data: plannedMoonTrajectory } = useMoonTrajectory("future");
   const { milestone, secondsRemaining } = useNextMilestone();
   const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+  const [sceneView, setSceneView] = useState<SceneView>("top");
 
   return (
     <div
@@ -48,6 +51,9 @@ export default function Home(): React.JSX.Element {
 
       {/* 3D Scene — grid row "1fr" means it takes all remaining height */}
       <div className="relative overflow-hidden">
+        <div className="pointer-events-auto absolute left-4 right-4 top-4 z-20 sm:left-6 sm:right-6">
+          <SceneViewToggle value={sceneView} onChange={setSceneView} />
+        </div>
         {isPending && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <div className="flex flex-col items-center gap-3 text-zinc-400">
@@ -66,6 +72,7 @@ export default function Home(): React.JSX.Element {
         )}
         <Suspense>
           <SpaceScene
+            view={sceneView}
             data={data ?? null}
             trajectory={trajectory ?? null}
             moonTrajectory={moonTrajectory ?? null}
@@ -74,9 +81,16 @@ export default function Home(): React.JSX.Element {
             className="h-full w-full"
           />
         </Suspense>
-        {/* Drag hint overlay */}
-        <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-xs text-zinc-500 backdrop-blur-sm">
-          Drag to pan · Scroll to zoom
+        {/* Interaction hint — wording avoids “scroll” on touch devices */}
+        <div className="pointer-events-none absolute bottom-4 left-1/2 max-w-[min(100%,24rem)] -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-center text-xs text-zinc-500 backdrop-blur-sm">
+          <span className="sm:hidden">
+            {sceneView === "free" ? "Drag to orbit · Pinch to zoom" : "Drag to pan · Pinch to zoom"}
+          </span>
+          <span className="hidden sm:inline">
+            {sceneView === "free"
+              ? "Drag to orbit · Scroll to zoom"
+              : "Drag to pan · Scroll to zoom"}
+          </span>
         </div>
       </div>
 
