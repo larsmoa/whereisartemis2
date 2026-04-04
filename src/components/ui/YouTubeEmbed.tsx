@@ -4,7 +4,7 @@
  * Active mission stream — update this video ID when a new mission event starts.
  * Set to null when no dedicated mission stream is active; falls back to ISS_STREAM_ID.
  */
-const MISSION_STREAM_ID: string | null = "6RwfNBtepa4";
+const MISSION_STREAM_ID: string | null = "m3kR2KK8TEs";
 
 /** NASA ISS 24/7 live stream — always available as a fallback */
 const ISS_STREAM_ID = "k43fLnlvKtY";
