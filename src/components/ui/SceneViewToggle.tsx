@@ -13,7 +13,7 @@ export interface SceneViewToggleProps {
 
 type IconProps = { className?: string };
 
-/** Plan / map view — frame with center (camera from above). */
+/** Top view — circle with crosshairs (classic overhead map / plan). */
 function IconTopView({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -23,22 +23,51 @@ function IconTopView({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <rect
-        x="3"
-        y="3"
-        width="18"
-        height="18"
-        rx="2"
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="2" />
+      {/* horizontal crosshair */}
+      <line
+        x1="4"
+        y1="12"
+        x2="8"
+        y2="12"
         stroke="currentColor"
         strokeWidth="2"
-        strokeLinejoin="round"
+        strokeLinecap="round"
       />
-      <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="2" />
+      <line
+        x1="16"
+        y1="12"
+        x2="20"
+        y2="12"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      {/* vertical crosshair */}
+      <line
+        x1="12"
+        y1="4"
+        x2="12"
+        y2="8"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="12"
+        y1="16"
+        x2="12"
+        y2="20"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
     </svg>
   );
 }
 
-/** Elevation / profile — vertical plane with horizon. */
+/** Side view — two stacked horizontal bars (elevation / horizon profile). */
 function IconSideView({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -48,28 +77,35 @@ function IconSideView({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
+      {/* upper bar */}
       <rect
-        x="5"
-        y="3"
-        width="14"
-        height="18"
+        x="3"
+        y="6"
+        width="18"
+        height="5"
         rx="1.5"
         stroke="currentColor"
         strokeWidth="2"
         strokeLinejoin="round"
       />
-      <path
-        d="M5 12h14"
+      {/* lower bar (horizon / ground) */}
+      <rect
+        x="3"
+        y="14"
+        width="18"
+        height="4"
+        rx="1.5"
+        fill="currentColor"
+        opacity="0.25"
         stroke="currentColor"
         strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.6"
+        strokeLinejoin="round"
       />
     </svg>
   );
 }
 
-/** Orbit — arc and camera dot (free navigation). */
+/** Free orbit — compass rose with four cardinal points (navigate freely). */
 function IconFreeOrbit({ className }: IconProps): JSX.Element {
   return (
     <svg
@@ -79,20 +115,46 @@ function IconFreeOrbit({ className }: IconProps): JSX.Element {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden
     >
-      <path
-        d="M4 14a8 8 0 0 1 14.5-4.5"
+      {/* outer ring */}
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
         stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
+        strokeWidth="1.5"
+        strokeDasharray="3 2.5"
       />
+      {/* N pointer (filled) */}
+      <path d="M12 3 L14 10 L12 8.5 L10 10 Z" fill="currentColor" />
+      {/* S pointer (outline) */}
       <path
-        d="M19 6v4h-4"
+        d="M12 21 L14 14 L12 15.5 L10 14 Z"
         stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
+        strokeWidth="1.2"
         strokeLinejoin="round"
+        fill="none"
       />
-      <circle cx="8" cy="16" r="2" fill="currentColor" />
+      {/* W & E ticks */}
+      <line
+        x1="3"
+        y1="12"
+        x2="5.5"
+        y2="12"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <line
+        x1="18.5"
+        y1="12"
+        x2="21"
+        y2="12"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      {/* centre dot */}
+      <circle cx="12" cy="12" r="1.25" fill="currentColor" />
     </svg>
   );
 }
