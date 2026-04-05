@@ -10,7 +10,9 @@ import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
  * Earth — realistic sphere at the scene origin with textures and clouds.
  * `EARTH_SCENE_RADIUS` is the reference for trajectory scaling and Moon size.
  */
-export function EarthMesh(): React.JSX.Element {
+export function EarthMesh({
+  position = [0, 0, 0],
+}: { position?: [number, number, number] } = {}): React.JSX.Element {
   const earthRef = useRef<Mesh>(null);
   const cloudsRef = useRef<Mesh>(null);
 
@@ -27,7 +29,7 @@ export function EarthMesh(): React.JSX.Element {
   });
 
   return (
-    <group position={[0, 0, 0]}>
+    <group position={position}>
       {/* Earth Sphere */}
       <mesh ref={earthRef}>
         <sphereGeometry args={[EARTH_SCENE_RADIUS, 64, 64]} />

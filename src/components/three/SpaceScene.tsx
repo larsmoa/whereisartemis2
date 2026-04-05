@@ -75,6 +75,7 @@ interface SceneBodiesProps {
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   starsPerspective: boolean;
+  origin?: [number, number, number];
 }
 
 function SceneBodies({
@@ -87,25 +88,75 @@ function SceneBodies({
   moonPos,
   artemisPos,
   starsPerspective,
+  origin = [0, 0, 0],
 }: SceneBodiesProps): React.JSX.Element {
+  const shiftedEarthPos = React.useMemo<[number, number, number]>(
+    () => [-origin[0], -origin[1], -origin[2]],
+    [origin],
+  );
+
+  const shiftedMoonPos = React.useMemo<[number, number, number]>(
+    () => [moonPos[0] - origin[0], moonPos[1] - origin[1], moonPos[2] - origin[2]],
+    [moonPos, origin],
+  );
+
+  const shiftedArtemisPos = React.useMemo<[number, number, number]>(
+    () => [artemisPos[0] - origin[0], artemisPos[1] - origin[1], artemisPos[2] - origin[2]],
+    [artemisPos, origin],
+  );
+
+  const shiftTrajectory = React.useCallback(
+    (traj: ScenePoint[] | null | undefined) => {
+      if (!traj) return traj;
+      return traj.map(([x, y, z]) => [x - origin[0], y - origin[1], z - origin[2]] as ScenePoint);
+    },
+    [origin],
+  );
+
+  const shiftedMoonTrajectory = React.useMemo(
+    () => shiftTrajectory(moonTrajectory),
+    [moonTrajectory, shiftTrajectory],
+  );
+  const shiftedPlannedMoonTrajectory = React.useMemo(
+    () => shiftTrajectory(plannedMoonTrajectory),
+    [plannedMoonTrajectory, shiftTrajectory],
+  );
+  const shiftedTrajectory = React.useMemo(
+    () => shiftTrajectory(trajectory),
+    [trajectory, shiftTrajectory],
+  );
+  const shiftedPlannedTrajectory = React.useMemo(
+    () => shiftTrajectory(plannedTrajectory),
+    [plannedTrajectory, shiftTrajectory],
+  );
+
   return (
     <>
       <ambientLight intensity={0.25} />
       <directionalLight position={[100, 50, 80]} intensity={1.8} />
       <PointStars perspective={starsPerspective} />
-      <EarthMesh />
-      <MoonMesh position={moonPos} view={view} />
-      {moonTrajectory && <TrajectoryLine points={moonTrajectory} color="#aaaaaa" opacity={0.4} />}
-      {plannedMoonTrajectory && (
-        <TrajectoryLine points={plannedMoonTrajectory} color="#aaaaaa" opacity={0.2} dashed />
+      <EarthMesh position={shiftedEarthPos} />
+      <MoonMesh position={shiftedMoonPos} view={view} />
+      {shiftedMoonTrajectory && (
+        <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.4} />
       )}
-      {trajectory && <TrajectoryLine points={trajectory} color="#4488ff" opacity={0.6} />}
-      {plannedTrajectory && (
-        <TrajectoryLine points={plannedTrajectory} color="#4488ff" opacity={0.3} dashed />
+      {shiftedPlannedMoonTrajectory && (
+        <TrajectoryLine
+          points={shiftedPlannedMoonTrajectory}
+          color="#aaaaaa"
+          opacity={0.2}
+          dashed
+        />
+      )}
+      {shiftedTrajectory && (
+        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.6} />
+      )}
+      {shiftedPlannedTrajectory && (
+        <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.3} dashed />
       )}
       {data && (
         <React.Suspense fallback={null}>
-          <ArtemisMesh position={artemisPos} view={view} />
+          <ArtemisMesh position={shiftedArtemisPos} view={view} />
         </React.Suspense>
       )}
     </>
@@ -201,9 +252,6 @@ function SceneContentsFree({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
-  craftX,
-  craftY,
-  craftZ,
 }: {
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
@@ -212,13 +260,31 @@ function SceneContentsFree({
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
-  craftX: number;
-  craftY: number;
-  craftZ: number;
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
   const prevCraftSceneRef = useRef<[number, number, number] | null>(null);
+
+  // Floating origin state to prevent vertex shader precision loss (jitter)
+  const [origin, setOrigin] = React.useState<[number, number, number]>(artemisPos);
+
+  // Update origin if spacecraft moves too far from it
+  React.useEffect(() => {
+    const dx = artemisPos[0] - origin[0];
+    const dy = artemisPos[1] - origin[1];
+    const dz = artemisPos[2] - origin[2];
+    const distSq = dx * dx + dy * dy + dz * dz;
+
+    // 10 units squared = 100
+    if (distSq > 100) {
+      setOrigin(artemisPos);
+    }
+  }, [artemisPos, origin]);
+
+  const shiftedArtemisPos = React.useMemo<[number, number, number]>(
+    () => [artemisPos[0] - origin[0], artemisPos[1] - origin[1], artemisPos[2] - origin[2]],
+    [artemisPos, origin],
+  );
 
   /* Three.js camera is mutable scene state; R3F does not wrap it in React state. */
   /* eslint-disable react-hooks/immutability -- follow capsule; keep user orbit offset */
@@ -226,7 +292,7 @@ function SceneContentsFree({
     const ctrl = orbitRef.current;
     if (!ctrl) return;
     const cam = camera as PerspectiveCameraType;
-    const [ax, ay, az] = toScenePosition({ x: craftX, y: craftY, z: craftZ });
+    const [ax, ay, az] = shiftedArtemisPos;
 
     if (prevCraftSceneRef.current === null) {
       ctrl.target.set(ax, ay, az);
@@ -247,7 +313,7 @@ function SceneContentsFree({
     }
     prevCraftSceneRef.current = [ax, ay, az];
     ctrl.update();
-  }, [craftX, craftY, craftZ, camera]);
+  }, [shiftedArtemisPos, camera]);
   /* eslint-enable react-hooks/immutability */
 
   return (
@@ -262,6 +328,7 @@ function SceneContentsFree({
         moonPos={moonPos}
         artemisPos={artemisPos}
         starsPerspective={true}
+        origin={origin}
       />
       <OrbitControls
         ref={orbitRef}
@@ -329,9 +396,6 @@ export function SpaceScene({
           plannedMoonTrajectory={plannedMoonTrajectory}
           moonPos={moonPos}
           artemisPos={artemisPos}
-          craftX={craftX}
-          craftY={craftY}
-          craftZ={craftZ}
         />
       </Canvas>
     );
