@@ -10,7 +10,7 @@ import type {
 } from "three";
 import { EarthMesh } from "./EarthMesh";
 import { MoonMesh } from "./MoonMesh";
-import { ArtemisMesh } from "./ArtemisMesh";
+import { OrionSpacecraft } from "./OrionSpacecraft";
 import { TrajectoryLine } from "./TrajectoryLine";
 import { FREE_ORBIT_INITIAL_OFFSET, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition } from "@/lib/sceneCoords";
@@ -156,7 +156,7 @@ function SceneBodies({
       )}
       {data && (
         <React.Suspense fallback={null}>
-          <ArtemisMesh position={shiftedArtemisPos} view={view} />
+          <OrionSpacecraft position={shiftedArtemisPos} view={view} />
         </React.Suspense>
       )}
     </>
