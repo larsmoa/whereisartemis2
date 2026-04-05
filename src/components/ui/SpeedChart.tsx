@@ -1,3 +1,4 @@
+import { useId } from "react";
 import type { TrajectoryDataPoint } from "@/types";
 import type { UnitSystem } from "@/lib/format";
 
@@ -7,6 +8,8 @@ interface SpeedChartProps {
 }
 
 export function SpeedChart({ data, unitSystem }: SpeedChartProps): React.JSX.Element | null {
+  const gradientId = `history-fade-${useId().replace(/:/g, "")}`;
+
   if (!data || data.length < 2) return null;
 
   // Map speed to Y and time to X.
@@ -41,16 +44,16 @@ export function SpeedChart({ data, unitSystem }: SpeedChartProps): React.JSX.Ele
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient id="history-fade" x1="0" y1="0" x2="1" y2="0">
+          <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="white" stopOpacity="0" />
             <stop offset="50%" stopColor="white" stopOpacity="0.4" />
             <stop offset="100%" stopColor="white" stopOpacity="1" />
           </linearGradient>
         </defs>
-        <path d={areaD} fill="url(#history-fade)" opacity="0.2" />
+        <path d={areaD} fill={`url(#${gradientId})`} opacity="0.2" />
         <path
           d={pathD}
-          stroke="url(#history-fade)"
+          stroke={`url(#${gradientId})`}
           className="fill-none"
           strokeWidth="1.5"
           vectorEffect="non-scaling-stroke"
