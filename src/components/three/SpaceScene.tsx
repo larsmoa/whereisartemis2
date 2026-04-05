@@ -146,22 +146,24 @@ function SceneContentsOrtho({
   const orbitRef = useRef<OrbitControlsHandle>(null);
 
   /* Three.js camera is mutable scene state; R3F does not wrap it in React state. */
-  /* eslint-disable react-hooks/immutability -- sync OrbitControls + orthographic camera */
   useLayoutEffect(() => {
     const ctrl = orbitRef.current;
     if (!ctrl) return;
     const cam = camera as OrthographicCameraType;
     const { position, up } = getOrthographicEyeForView(mapView);
+
+    // Initial target centered between Earth and Moon
     const [mx, my, mz] = toScenePosition({ x: moonX, y: moonY, z: moonZ });
+
     cam.position.set(position[0], position[1], position[2]);
     cam.up.set(up[0], up[1], up[2]);
     cam.zoom = 1.15;
     cam.updateProjectionMatrix();
-    /* Earth at origin; center between Earth and Moon */
+
     ctrl.target.set(mx / 2, my / 2, mz / 2);
     ctrl.update();
-  }, [mapView, moonX, moonY, moonZ, camera]);
-  /* eslint-enable react-hooks/immutability */
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on view change
+  }, [mapView, camera]);
 
   return (
     <>
