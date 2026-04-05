@@ -1,19 +1,27 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useInterpolatedArtemisData } from "@/hooks/useInterpolatedArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
 import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
 import { useNextMilestone } from "@/hooks/useNextMilestone";
+import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { SceneViewToggle } from "@/components/ui/SceneViewToggle";
+import { SceneViewToggle, UnitToggle } from "@/components/ui";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { MissionFeed } from "@/components/ui/MissionFeed";
 import type { SceneView } from "@/types";
-import { formatKm, formatSpeed, formatElapsed, formatDelay } from "@/lib/format";
+import {
+  formatDistance,
+  formatSpeed,
+  formatSpeedPerHour,
+  formatElapsed,
+  formatDelay,
+} from "@/lib/format";
+import type { UnitSystem } from "@/lib/format";
 
 // SpaceScene uses WebGL — load client-side only, no SSR
 const SpaceScene = dynamic(
@@ -24,6 +32,8 @@ const SpaceScene = dynamic(
 function ScenePanel({
   sceneView,
   setSceneView,
+  unitSystem,
+  setUnitSystem,
   data,
   trajectory,
   moonTrajectory,
@@ -35,6 +45,8 @@ function ScenePanel({
 }: {
   sceneView: SceneView;
   setSceneView: (v: SceneView) => void;
+  unitSystem: UnitSystem;
+  setUnitSystem: (v: UnitSystem) => void;
   data: ReturnType<typeof useArtemisData>["data"];
   trajectory: ReturnType<typeof useArtemisTrajectory>["data"];
   moonTrajectory: ReturnType<typeof useMoonTrajectory>["data"];
@@ -46,8 +58,9 @@ function ScenePanel({
 }): React.JSX.Element {
   return (
     <div className="relative overflow-hidden h-full w-full">
-      <div className="pointer-events-auto absolute bottom-4 left-4 z-20">
+      <div className="pointer-events-auto absolute bottom-4 left-4 z-20 flex flex-col gap-2">
         <SceneViewToggle value={sceneView} onChange={setSceneView} />
+        <UnitToggle value={unitSystem} onChange={setUnitSystem} />
       </div>
       {isPending && (
         <div className="absolute inset-0 z-10 flex items-center justify-center">
@@ -93,25 +106,31 @@ function StatsSection({
   data,
   milestone,
   secondsRemaining,
+  unitSystem,
 }: {
   data: ReturnType<typeof useArtemisData>["data"];
   milestone: ReturnType<typeof useNextMilestone>["milestone"];
   secondsRemaining: ReturnType<typeof useNextMilestone>["secondsRemaining"];
+  unitSystem: UnitSystem;
 }): React.JSX.Element {
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
       <div className="grid grid-cols-2 gap-2 p-3 sm:gap-3 sm:p-4 sm:grid-cols-3 lg:grid-cols-6">
         <StatCard
           label="Distance from Earth"
-          value={data ? formatKm(data.distanceFromEarthKm) : "—"}
+          value={data ? formatDistance(data.distanceFromEarthKm, unitSystem) : "—"}
           sub="from Earth surface"
         />
         <StatCard
           label="Distance from Moon"
-          value={data ? formatKm(data.distanceFromMoonKm) : "—"}
+          value={data ? formatDistance(data.distanceFromMoonKm, unitSystem) : "—"}
           sub="from Moon surface"
         />
-        <StatCard label="Speed" value={data ? formatSpeed(data.speedKms) : "—"} />
+        <StatCard
+          label="Speed"
+          value={data ? formatSpeed(data.speedKms, unitSystem) : "—"}
+          {...(data ? { sub: formatSpeedPerHour(data.speedKms, unitSystem) } : {})}
+        />
         <StatCard
           label="Signal delay"
           value={data ? formatDelay(data.signalDelaySeconds) : "—"}
@@ -176,13 +195,23 @@ export default function Home(): React.JSX.Element {
   const { data: moonTrajectory } = useMoonTrajectory("past");
   const { data: plannedMoonTrajectory } = useMoonTrajectory("future");
   const { milestone, secondsRemaining } = useNextMilestone();
-  const lastUpdated = dataUpdatedAt ? new Date(dataUpdatedAt) : null;
+  const { unitSystem, setUnitSystem } = useUnitSystem();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  const lastUpdated = mounted && dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const [sceneView, setSceneView] = useState<SceneView>("top");
 
   const scenePanelProps = {
     sceneView,
     setSceneView,
-    data,
+    unitSystem,
+    setUnitSystem,
+    data: mounted ? data : undefined,
     trajectory,
     moonTrajectory,
     plannedTrajectory,
@@ -191,7 +220,12 @@ export default function Home(): React.JSX.Element {
     error,
   };
 
-  const statsProps = { data, milestone, secondsRemaining };
+  const statsProps = {
+    data: mounted ? data : undefined,
+    milestone: mounted ? milestone : null,
+    secondsRemaining: mounted ? secondsRemaining : 0,
+    unitSystem,
+  };
 
   return (
     <>

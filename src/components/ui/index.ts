@@ -4,3 +4,4 @@ export { StatCard } from "./StatCard";
 export { LiveBadge } from "./LiveBadge";
 export { QueryProvider } from "./QueryProvider";
 export { SceneViewToggle } from "./SceneViewToggle";
+export { UnitToggle } from "./UnitToggle";

@@ -1,24 +1,49 @@
 import { describe, it, expect } from "vitest";
-import { formatKm, formatSpeed, formatElapsed, formatDelay } from "./format";
+import {
+  formatDistance,
+  formatSpeed,
+  formatSpeedPerHour,
+  formatElapsed,
+  formatDelay,
+} from "./format";
+import type { UnitSystem } from "./format";
 
-describe("formatKm", () => {
+describe("formatDistance", () => {
   it.each([
-    [0, 0, "0 km"],
-    [384400, 0, "384,400 km"],
-    [7675.5, 1, "7,675.5 km"],
-    [1.5, 2, "1.50 km"],
-  ] as const)("formatKm(%s, %s) → %s", (km, decimals, expected) => {
-    expect(formatKm(km, decimals)).toBe(expected);
+    [0, "metric", 0, "0 km"],
+    [384400, "metric", 0, "384,400 km"],
+    [7675.5, "metric", 1, "7,675.5 km"],
+    [1.5, "metric", 2, "1.50 km"],
+    [0, "us", 0, "0 mi"],
+    [384400, "us", 0, "238,855 mi"],
+    [7675.5, "us", 1, "4,769.3 mi"],
+    [1.5, "us", 2, "0.93 mi"],
+  ] as const)("formatDistance(%s, %s, %s) → %s", (km, system, decimals, expected) => {
+    expect(formatDistance(km, system as UnitSystem, decimals)).toBe(expected);
   });
 });
 
 describe("formatSpeed", () => {
   it.each([
-    [2.54, "2.54 km/s"],
-    [10, "10.00 km/s"],
-    [9.9999, "10.00 km/s"],
-  ] as const)("formatSpeed(%s) → %s", (kms, expected) => {
-    expect(formatSpeed(kms)).toBe(expected);
+    [2.54, "metric", "2.54 km/s"],
+    [10, "metric", "10.00 km/s"],
+    [9.9999, "metric", "10.00 km/s"],
+    [2.54, "us", "1.58 mi/s"],
+    [10, "us", "6.21 mi/s"],
+    [9.9999, "us", "6.21 mi/s"],
+  ] as const)("formatSpeed(%s, %s) → %s", (kms, system, expected) => {
+    expect(formatSpeed(kms, system as UnitSystem)).toBe(expected);
+  });
+});
+
+describe("formatSpeedPerHour", () => {
+  it.each([
+    [2.54, "metric", "9,144 km/h"],
+    [10, "metric", "36,000 km/h"],
+    [2.54, "us", "5,682 mph"],
+    [10, "us", "22,369 mph"],
+  ] as const)("formatSpeedPerHour(%s, %s) → %s", (kms, system, expected) => {
+    expect(formatSpeedPerHour(kms, system as UnitSystem)).toBe(expected);
   });
 });
 

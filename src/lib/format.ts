@@ -1,16 +1,39 @@
+export type UnitSystem = "metric" | "us";
+
 /** Format a number with thousands separators and fixed decimals */
-export function formatKm(km: number, decimals = 0): string {
+export function formatDistance(km: number, system: UnitSystem = "metric", decimals = 0): string {
+  const value = system === "us" ? km * 0.621371 : km;
+  const unit = system === "us" ? "mi" : "km";
   return (
-    km.toLocaleString("en-US", {
+    value.toLocaleString("en-US", {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    }) + " km"
+    }) + ` ${unit}`
   );
 }
 
 /** Format km/s with 2 decimal places */
-export function formatSpeed(kms: number): string {
-  return kms.toFixed(2) + " km/s";
+export function formatSpeed(kms: number, system: UnitSystem = "metric"): string {
+  const value = system === "us" ? kms * 0.621371 : kms;
+  const unit = system === "us" ? "mi/s" : "km/s";
+  return (
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) + ` ${unit}`
+  );
+}
+
+/** Format speed in per hour units (km/h or mph) */
+export function formatSpeedPerHour(kms: number, system: UnitSystem = "metric"): string {
+  const value = system === "us" ? kms * 2236.9356 : kms * 3600;
+  const unit = system === "us" ? "mph" : "km/h";
+  return (
+    value.toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }) + ` ${unit}`
+  );
 }
 
 /** Format seconds as Xd Xh Xm Xs */
