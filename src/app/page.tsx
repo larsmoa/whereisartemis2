@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { Group, Panel, Separator } from "react-resizable-panels";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useInterpolatedArtemisData } from "@/hooks/useInterpolatedArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
@@ -268,10 +269,21 @@ export default function Home(): React.JSX.Element {
         {/* Top tracker section: fixed to viewport height */}
         <div className="grid" style={{ gridTemplateRows: "auto 1fr auto", height: "100dvh" }}>
           <PageHeader lastUpdated={lastUpdated} />
-          {/* Scene row: 2:1 split between 3D scene and YouTube */}
-          <div className="grid min-h-0" style={{ gridTemplateColumns: "2fr 1fr" }}>
-            <ScenePanel {...scenePanelProps} isMobile={false} />
-            <YouTubeEmbed />
+          {/* Scene row: adjustable split between 3D scene and YouTube */}
+          <div className="flex min-h-0 relative">
+            <Group orientation="horizontal">
+              <Panel defaultSize={67} minSize={20}>
+                <div className="h-full w-full">
+                  <ScenePanel {...scenePanelProps} isMobile={false} />
+                </div>
+              </Panel>
+              <Separator className="w-1 cursor-col-resize bg-white/10 hover:bg-white/30 active:bg-white/50 transition-colors z-30" />
+              <Panel defaultSize={33} minSize={20}>
+                <div className="h-full w-full relative">
+                  <YouTubeEmbed className="h-full" />
+                </div>
+              </Panel>
+            </Group>
           </div>
           <StatsSection {...statsProps} />
         </div>
