@@ -5,3 +5,4 @@ export { LiveBadge } from "./LiveBadge";
 export { QueryProvider } from "./QueryProvider";
 export { SceneViewToggle } from "./SceneViewToggle";
 export { UnitToggle } from "./UnitToggle";
+export { SpeedChart } from "./SpeedChart";

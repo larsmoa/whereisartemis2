@@ -1,22 +1,28 @@
 import { fetchTrajectory, SPLASHDOWN_TIME } from "@/lib/horizons";
 import { toScenePosition } from "@/lib/sceneCoords";
-import type { ScenePoint } from "@/types";
+import type { TrajectoryDataPoint } from "@/types";
 import { unstable_cache } from "next/cache";
 import { type NextRequest } from "next/server";
 
 export const revalidate = 300;
 
 const getCachedTrajectory = unstable_cache(
-  async (type: "past" | "future"): Promise<ScenePoint[]> => {
+  async (type: "past" | "future"): Promise<TrajectoryDataPoint[]> => {
     let positions;
     if (type === "future") {
       positions = await fetchTrajectory("-1024", new Date(), SPLASHDOWN_TIME, "10m");
     } else {
       positions = await fetchTrajectory("-1024", undefined, undefined, "10m");
     }
-    return positions.map((p) => toScenePosition(p.position));
+    return positions.map((p) => ({
+      position: toScenePosition(p.position),
+      speedKms: Math.sqrt(
+        p.velocity.x * p.velocity.x + p.velocity.y * p.velocity.y + p.velocity.z * p.velocity.z,
+      ),
+      date: p.date.toISOString(),
+    }));
   },
-  ["artemis-trajectory"],
+  ["artemis-trajectory-v2"],
   { revalidate: 300 },
 );
 

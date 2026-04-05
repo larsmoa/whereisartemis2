@@ -26,6 +26,12 @@ export interface TrajectoryPoint {
 /** A single point along the spacecraft trajectory in scene-space coordinates */
 export type ScenePoint = [number, number, number];
 
+export interface TrajectoryDataPoint {
+  position: ScenePoint;
+  speedKms: number;
+  date: string;
+}
+
 /** Camera mode for the mission 3D view */
 export type SceneView = "top" | "side" | "free";
 

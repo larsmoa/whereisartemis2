@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
 import { useInterpolatedArtemisData } from "@/hooks/useInterpolatedArtemisData";
@@ -10,10 +10,10 @@ import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { SceneViewToggle, UnitToggle } from "@/components/ui";
+import { SceneViewToggle, UnitToggle, SpeedChart } from "@/components/ui";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { MissionFeed } from "@/components/ui/MissionFeed";
-import type { SceneView } from "@/types";
+import type { SceneView, ScenePoint } from "@/types";
 import {
   formatDistance,
   formatSpeed,
@@ -48,9 +48,9 @@ function ScenePanel({
   unitSystem: UnitSystem;
   setUnitSystem: (v: UnitSystem) => void;
   data: ReturnType<typeof useArtemisData>["data"];
-  trajectory: ReturnType<typeof useArtemisTrajectory>["data"];
+  trajectory: ScenePoint[] | null;
   moonTrajectory: ReturnType<typeof useMoonTrajectory>["data"];
-  plannedTrajectory: ReturnType<typeof useArtemisTrajectory>["data"];
+  plannedTrajectory: ScenePoint[] | null;
   plannedMoonTrajectory: ReturnType<typeof useMoonTrajectory>["data"];
   isPending: boolean;
   error: ReturnType<typeof useArtemisData>["error"];
@@ -104,11 +104,13 @@ function ScenePanel({
 
 function StatsSection({
   data,
+  trajectoryData,
   milestone,
   secondsRemaining,
   unitSystem,
 }: {
   data: ReturnType<typeof useArtemisData>["data"];
+  trajectoryData: ReturnType<typeof useArtemisTrajectory>["data"];
   milestone: ReturnType<typeof useNextMilestone>["milestone"];
   secondsRemaining: ReturnType<typeof useNextMilestone>["secondsRemaining"];
   unitSystem: UnitSystem;
@@ -130,7 +132,11 @@ function StatsSection({
           label="Speed"
           value={data ? formatSpeed(data.speedKms, unitSystem) : "—"}
           {...(data ? { sub: formatSpeedPerHour(data.speedKms, unitSystem) } : {})}
-        />
+        >
+          {trajectoryData && trajectoryData.length > 1 && (
+            <SpeedChart data={trajectoryData} unitSystem={unitSystem} />
+          )}
+        </StatCard>
         <StatCard
           label="Signal delay"
           value={data ? formatDelay(data.signalDelaySeconds) : "—"}
@@ -190,13 +196,22 @@ function PageFooter(): React.JSX.Element {
 export default function Home(): React.JSX.Element {
   const { data: rawData, isPending, error, dataUpdatedAt } = useArtemisData();
   const data = useInterpolatedArtemisData(rawData);
-  const { data: trajectory } = useArtemisTrajectory("past");
-  const { data: plannedTrajectory } = useArtemisTrajectory("future");
+  const { data: trajectoryData } = useArtemisTrajectory("past");
+  const { data: plannedTrajectoryData } = useArtemisTrajectory("future");
   const { data: moonTrajectory } = useMoonTrajectory("past");
   const { data: plannedMoonTrajectory } = useMoonTrajectory("future");
   const { milestone, secondsRemaining } = useNextMilestone();
   const { unitSystem, setUnitSystem } = useUnitSystem();
   const [mounted, setMounted] = useState(false);
+
+  const trajectory = useMemo(
+    () => trajectoryData?.map((p) => p.position) ?? null,
+    [trajectoryData],
+  );
+  const plannedTrajectory = useMemo(
+    () => plannedTrajectoryData?.map((p) => p.position) ?? null,
+    [plannedTrajectoryData],
+  );
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -222,6 +237,7 @@ export default function Home(): React.JSX.Element {
 
   const statsProps = {
     data: mounted ? data : undefined,
+    trajectoryData: mounted ? trajectoryData : undefined,
     milestone: mounted ? milestone : null,
     secondsRemaining: mounted ? secondsRemaining : 0,
     unitSystem,
