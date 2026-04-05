@@ -171,7 +171,7 @@ function SceneBodies({
 const ORTHO_TOUCHES = { ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_PAN } as const;
 
 /**
- * Orthographic map views: top (+Z) or side (+X). Pan and zoom only; no orbit rotation.
+ * Orthographic map views: top (+Z) or side (-X). Pan and zoom only; no orbit rotation.
  */
 function SceneContentsOrtho({
   mapView,
@@ -371,7 +371,7 @@ function SceneContentsFree({
 
 /**
  * J2000 ecliptic: X = vernal equinox, Y = 90° along ecliptic, Z = ecliptic north.
- * Top view: camera on +Z, up +X (map rotated 90° CCW vs north-up). Side view: camera on +X, up +Z (edge-on ecliptic).
+ * Top view: camera on +Z, up +X (map rotated 90° CCW vs north-up). Side view: camera on -X, up +Z (edge-on ecliptic).
  * Free view: perspective camera orbiting the capsule.
  */
 export function SpaceScene({

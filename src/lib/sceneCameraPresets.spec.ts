@@ -13,7 +13,7 @@ describe("getOrthographicEyeForView", () => {
     [
       "side",
       {
-        position: [100, 0, 0] as const,
+        position: [-100, 0, 0] as const,
         up: [0, 0, 1] as const,
       },
     ],
