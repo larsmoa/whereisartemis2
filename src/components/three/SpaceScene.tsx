@@ -2,7 +2,7 @@
 
 import React, { type ComponentRef, useLayoutEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { OrbitControls, Environment } from "@react-three/drei";
 import { TOUCH, Vector3 } from "three";
 import type {
   OrthographicCamera as OrthographicCameraType,
@@ -75,7 +75,6 @@ interface SceneBodiesProps {
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
-  starsPerspective: boolean;
   origin?: [number, number, number];
 }
 
@@ -88,7 +87,6 @@ function SceneBodies({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
-  starsPerspective,
   origin = [0, 0, 0],
 }: SceneBodiesProps): React.JSX.Element {
   const shiftedEarthPos = React.useMemo<[number, number, number]>(
@@ -135,7 +133,8 @@ function SceneBodies({
     <>
       <ambientLight intensity={0.25} />
       <directionalLight position={[100, 50, 80]} intensity={1.8} />
-      <PointStars perspective={starsPerspective} />
+      <Environment files="/textures/starmap_2020_4k.exr" background={view === "free"} />
+      {view !== "free" && <PointStars perspective={false} />}
       <EarthMesh position={shiftedEarthPos} />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
@@ -232,7 +231,6 @@ function SceneContentsOrtho({
         plannedMoonTrajectory={plannedMoonTrajectory}
         moonPos={moonPos}
         artemisPos={artemisPos}
-        starsPerspective={false}
       />
       <OrbitControls
         ref={orbitRef}
@@ -351,7 +349,6 @@ function SceneContentsFree({
         plannedMoonTrajectory={plannedMoonTrajectory}
         moonPos={moonPos}
         artemisPos={artemisPos}
-        starsPerspective={true}
         origin={origin}
       />
       <OrbitControls
