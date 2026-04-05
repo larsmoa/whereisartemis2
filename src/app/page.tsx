@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import dynamic from "next/dynamic";
 import { useArtemisData } from "@/hooks/useArtemisData";
+import { useInterpolatedArtemisData } from "@/hooks/useInterpolatedArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
 import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
 import { useNextMilestone } from "@/hooks/useNextMilestone";
@@ -162,13 +163,14 @@ function PageFooter(): React.JSX.Element {
       >
         NASA/JPL Horizons
       </a>{" "}
-      (body -1024). Updated every 60 seconds.
+      (body -1024). Updated every 30 seconds.
     </footer>
   );
 }
 
 export default function Home(): React.JSX.Element {
-  const { data, isPending, error, dataUpdatedAt } = useArtemisData();
+  const { data: rawData, isPending, error, dataUpdatedAt } = useArtemisData();
+  const data = useInterpolatedArtemisData(rawData);
   const { data: trajectory } = useArtemisTrajectory("past");
   const { data: plannedTrajectory } = useArtemisTrajectory("future");
   const { data: moonTrajectory } = useMoonTrajectory("past");

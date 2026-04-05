@@ -163,7 +163,7 @@ async function fetchBody(command: string, now: Date): Promise<HorizonsBody> {
   const stopIso = toHorizonsIso(stop);
 
   const url = buildHorizonsUrl(command, startIso, stopIso);
-  const res = await fetchHorizonsWithRetry(url, { next: { revalidate: 60 } });
+  const res = await fetchHorizonsWithRetry(url, { next: { revalidate: 30 } });
 
   const json = (await res.json()) as { result: string };
   return parseSoeBlock(json.result);
@@ -173,9 +173,9 @@ export async function fetchArtemisAndMoon(): Promise<{
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
 }> {
-  // Round to nearest minute to ensure cache hits (revalidate is 60s)
+  // Round to nearest 30 seconds to ensure cache hits (revalidate is 30s)
   const now = new Date();
-  now.setSeconds(0, 0);
+  now.setSeconds(Math.floor(now.getSeconds() / 30) * 30, 0);
 
   const [spacecraft, moon] = await Promise.all([fetchBody("-1024", now), fetchBody("301", now)]);
 

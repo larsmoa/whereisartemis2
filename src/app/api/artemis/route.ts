@@ -1,7 +1,7 @@
 import { fetchArtemisAndMoon, EARTH_RADIUS_KM, MOON_RADIUS_KM, LAUNCH_TIME } from "@/lib/horizons";
 import type { ArtemisData } from "@/types";
 
-export const revalidate = 60;
+export const revalidate = 30;
 
 export async function GET(): Promise<Response> {
   try {

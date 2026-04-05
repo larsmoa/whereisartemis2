@@ -13,8 +13,8 @@ export function QueryProvider({ children }: QueryProviderProps): React.JSX.Eleme
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 60_000,
-            refetchInterval: 60_000,
+            staleTime: 30_000,
+            refetchInterval: 30_000,
             retry: 2,
           },
         },
