@@ -24,7 +24,7 @@ describe("getOrthographicEyeForView", () => {
 
 describe("FREE_ORBIT_INITIAL_OFFSET", () => {
   it("is a non-zero offset tuple", () => {
-    expect(FREE_ORBIT_INITIAL_OFFSET).toEqual([25, 20, 25]);
+    expect(FREE_ORBIT_INITIAL_OFFSET).toEqual([0.00002, 0.00002, 0.00002]);
     expect(FREE_ORBIT_INITIAL_OFFSET.some((v) => v !== 0)).toBe(true);
   });
 });

@@ -2,9 +2,11 @@
 
 import { useTexture } from "@react-three/drei";
 import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import type { SceneView } from "@/types";
 
 interface MoonMeshProps {
   position: [number, number, number];
+  view?: SceneView;
 }
 
 /**
@@ -16,10 +18,12 @@ const MOON_RADIUS_SCENE = EARTH_SCENE_RADIUS / 2;
 /**
  * Moon — textured sphere.
  */
-export function MoonMesh({ position }: MoonMeshProps): React.JSX.Element {
+export function MoonMesh({ position, view }: MoonMeshProps): React.JSX.Element {
   const moonTexture = useTexture("/textures/moon.jpg");
 
-  const radius = MOON_RADIUS_SCENE;
+  // Realistic moon radius = 1737.4 / 6378.137 * EARTH_SCENE_RADIUS
+  const realisticRadius = (1737.4 / 6378.137) * EARTH_SCENE_RADIUS;
+  const radius = view === "free" ? realisticRadius : MOON_RADIUS_SCENE;
 
   return (
     <mesh position={position}>

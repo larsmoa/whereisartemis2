@@ -66,6 +66,7 @@ function PointStars({ perspective }: { perspective: boolean }): React.JSX.Elemen
 }
 
 interface SceneBodiesProps {
+  view: SceneView;
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
   moonTrajectory: ScenePoint[] | null;
@@ -77,6 +78,7 @@ interface SceneBodiesProps {
 }
 
 function SceneBodies({
+  view,
   data,
   trajectory,
   moonTrajectory,
@@ -92,7 +94,7 @@ function SceneBodies({
       <directionalLight position={[100, 50, 80]} intensity={1.8} />
       <PointStars perspective={starsPerspective} />
       <EarthMesh />
-      <MoonMesh position={moonPos} />
+      <MoonMesh position={moonPos} view={view} />
       {moonTrajectory && <TrajectoryLine points={moonTrajectory} color="#aaaaaa" opacity={0.4} />}
       {plannedMoonTrajectory && (
         <TrajectoryLine points={plannedMoonTrajectory} color="#aaaaaa" opacity={0.2} dashed />
@@ -103,7 +105,7 @@ function SceneBodies({
       )}
       {data && (
         <React.Suspense fallback={null}>
-          <ArtemisMesh position={artemisPos} />
+          <ArtemisMesh position={artemisPos} view={view} />
         </React.Suspense>
       )}
     </>
@@ -164,6 +166,7 @@ function SceneContentsOrtho({
   return (
     <>
       <SceneBodies
+        view={mapView}
         data={data}
         trajectory={trajectory}
         moonTrajectory={moonTrajectory}
@@ -248,6 +251,7 @@ function SceneContentsFree({
   return (
     <>
       <SceneBodies
+        view="free"
         data={data}
         trajectory={trajectory}
         moonTrajectory={moonTrajectory}
@@ -311,7 +315,7 @@ export function SpaceScene({
             artemisPos[2] + FREE_ORBIT_INITIAL_OFFSET[2],
           ],
           up: [0, 1, 0],
-          near: 0.1,
+          near: 0.0000001,
           far: 4000,
         }}
       >

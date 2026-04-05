@@ -5,15 +5,18 @@ import { useLoader } from "@react-three/fiber";
 import { Environment } from "@react-three/drei";
 import { STLLoader } from "three/examples/jsm/loaders/STLLoader.js";
 import * as THREE from "three";
+import type { SceneView } from "@/types";
+import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
 
 interface ArtemisMeshProps {
   position: [number, number, number];
+  view?: SceneView;
 }
 
 /**
  * Artemis II spacecraft — loaded from an STL model.
  */
-export function ArtemisMesh({ position }: ArtemisMeshProps): React.JSX.Element {
+export function ArtemisMesh({ position, view }: ArtemisMeshProps): React.JSX.Element {
   const geometry = useLoader(STLLoader, "/artemis.stl");
 
   // Center the geometry and apply fake textures via vertex colors
@@ -53,7 +56,10 @@ export function ArtemisMesh({ position }: ArtemisMeshProps): React.JSX.Element {
 
   // The STL bounding box is roughly 16x10x16 units. Base scale ≈0.226 for ~3.7
   // scene units near Earth; multiply so the craft stays visible at lunar distance.
-  const fixedScale = 0.226 * 4;
+  // The Orion capsule is about 5 meters (0.005 km) in diameter.
+  // In scene units: (0.005 / 6378.137) * EARTH_SCENE_RADIUS = 0.00000407
+  const realisticScale = (0.005 / 6378.137) * EARTH_SCENE_RADIUS;
+  const fixedScale = view === "free" ? realisticScale : 0.226 * 4;
 
   return (
     <group position={position}>
