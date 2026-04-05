@@ -260,8 +260,18 @@ export async function fetchTrajectory(
   stop?: Date,
   stepSize: string = "1h",
 ): Promise<TrajectoryPoint[]> {
+  const effectiveStop = stop ? new Date(stop) : new Date();
+
+  // Horizons ephemeris data for Artemis II (-1024) ends at 2026-04-10T23:54:30.3936Z.
+  // Cap the requested stop time to avoid 500 errors from the API.
+  if (command === "-1024") {
+    const HORIZONS_END_TIME = new Date("2026-04-10T23:54:00Z");
+    if (effectiveStop > HORIZONS_END_TIME) {
+      effectiveStop.setTime(HORIZONS_END_TIME.getTime());
+    }
+  }
+
   // Round dates to nearest 5 minutes to ensure cache hits (revalidate is 300s)
-  const effectiveStop = stop ?? new Date();
   effectiveStop.setMinutes(Math.floor(effectiveStop.getMinutes() / 5) * 5, 0, 0);
 
   const effectiveStart = new Date(start);

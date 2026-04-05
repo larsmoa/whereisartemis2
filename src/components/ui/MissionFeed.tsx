@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import { useNasaFeed } from "@/hooks/useNasaFeed";
 import type { NasaFeedItem, NasaFeedItemType } from "@/lib/nasa-feed";
@@ -88,12 +89,15 @@ function SkeletonCard(): React.JSX.Element {
 
 export function MissionFeed(): React.JSX.Element {
   const { data, isPending, error } = useNasaFeed();
+  const [visibleCount, setVisibleCount] = useState(4);
 
   const items = data
     ? [...data.articles, ...data.media].sort(
         (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
       )
     : [];
+
+  const visibleItems = items.slice(0, visibleCount);
 
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
@@ -123,11 +127,26 @@ export function MissionFeed(): React.JSX.Element {
         )}
 
         {!isPending && items.length > 0 && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {items.map((item) => (
-              <FeedCard key={item.id} item={item} />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {visibleItems.map((item) => (
+                <FeedCard key={item.id} item={item} />
+              ))}
+            </div>
+            {visibleCount < items.length && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVisibleCount((v) => v + 4);
+                  }}
+                  className="rounded-full border border-white/10 bg-white/5 px-6 py-2 text-xs font-semibold text-white transition-colors hover:bg-white/10"
+                >
+                  Load more
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         <p className="mt-4 text-center text-[10px] text-zinc-700">

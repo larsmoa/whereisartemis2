@@ -10,7 +10,7 @@ import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { SceneViewToggle, UnitToggle, SpeedChart } from "@/components/ui";
+import { SceneViewToggle, UnitToggle, SpeedChart, UpcomingEvents } from "@/components/ui";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { MissionFeed } from "@/components/ui/MissionFeed";
 import type { SceneView, ScenePoint } from "@/types";
@@ -258,6 +258,7 @@ export default function Home(): React.JSX.Element {
             <YouTubeEmbed className="absolute inset-0 border-l-0" />
           </div>
         </div>
+        <UpcomingEvents />
         <MissionFeed />
         <PageFooter />
       </div>
@@ -275,6 +276,7 @@ export default function Home(): React.JSX.Element {
           <StatsSection {...statsProps} />
         </div>
         {/* Mission feed: scrolls below the tracker */}
+        <UpcomingEvents />
         <MissionFeed />
         <PageFooter />
       </div>

@@ -51,3 +51,12 @@ export interface ArtemisData {
   /** ISO timestamp of this data snapshot */
   timestamp: string;
 }
+
+export interface ArtemisEvent {
+  id: string;
+  timestamp: string; // ISO 8601 format
+  name: string;
+  description: string;
+  thumbnail: string;
+  url?: string;
+}
