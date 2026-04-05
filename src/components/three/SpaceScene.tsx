@@ -12,6 +12,7 @@ import { EarthMesh } from "./EarthMesh";
 import { MoonMesh } from "./MoonMesh";
 import { OrionSpacecraft } from "./OrionSpacecraft";
 import { TrajectoryLine } from "./TrajectoryLine";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FREE_ORBIT_INITIAL_OFFSET, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition } from "@/lib/sceneCoords";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
@@ -396,31 +397,33 @@ export function SpaceScene({
 
   if (view === "free") {
     return (
-      <Canvas
-        key="perspective"
-        className={canvasClassName}
-        camera={{
-          fov: 52,
-          position: [
-            artemisPos[0] + FREE_ORBIT_INITIAL_OFFSET[0],
-            artemisPos[1] + FREE_ORBIT_INITIAL_OFFSET[1],
-            artemisPos[2] + FREE_ORBIT_INITIAL_OFFSET[2],
-          ],
-          up: [0, 0, 1],
-          near: 0.0000001,
-          far: 4000,
-        }}
-      >
-        <SceneContentsFree
-          data={data}
-          trajectory={trajectory}
-          moonTrajectory={moonTrajectory}
-          plannedTrajectory={plannedTrajectory}
-          plannedMoonTrajectory={plannedMoonTrajectory}
-          moonPos={moonPos}
-          artemisPos={artemisPos}
-        />
-      </Canvas>
+      <ErrorBoundary>
+        <Canvas
+          key="perspective"
+          className={canvasClassName}
+          camera={{
+            fov: 52,
+            position: [
+              artemisPos[0] + FREE_ORBIT_INITIAL_OFFSET[0],
+              artemisPos[1] + FREE_ORBIT_INITIAL_OFFSET[1],
+              artemisPos[2] + FREE_ORBIT_INITIAL_OFFSET[2],
+            ],
+            up: [0, 0, 1],
+            near: 0.0000001,
+            far: 4000,
+          }}
+        >
+          <SceneContentsFree
+            data={data}
+            trajectory={trajectory}
+            moonTrajectory={moonTrajectory}
+            plannedTrajectory={plannedTrajectory}
+            plannedMoonTrajectory={plannedMoonTrajectory}
+            moonPos={moonPos}
+            artemisPos={artemisPos}
+          />
+        </Canvas>
+      </ErrorBoundary>
     );
   }
 
@@ -428,31 +431,33 @@ export function SpaceScene({
   const eye = getOrthographicEyeForView(mapView);
 
   return (
-    <Canvas
-      key="orthographic"
-      className={canvasClassName}
-      orthographic
-      camera={{
-        position: [...eye.position] as [number, number, number],
-        up: [...eye.up] as [number, number, number],
-        zoom: 1.15,
-        near: 0.1,
-        far: 2000,
-      }}
-    >
-      <SceneContentsOrtho
-        mapView={mapView}
-        data={data}
-        trajectory={trajectory}
-        moonTrajectory={moonTrajectory}
-        plannedTrajectory={plannedTrajectory}
-        plannedMoonTrajectory={plannedMoonTrajectory}
-        moonPos={moonPos}
-        artemisPos={artemisPos}
-        moonX={moonX}
-        moonY={moonY}
-        moonZ={moonZ}
-      />
-    </Canvas>
+    <ErrorBoundary>
+      <Canvas
+        key="orthographic"
+        className={canvasClassName}
+        orthographic
+        camera={{
+          position: [...eye.position] as [number, number, number],
+          up: [...eye.up] as [number, number, number],
+          zoom: 1.15,
+          near: 0.1,
+          far: 2000,
+        }}
+      >
+        <SceneContentsOrtho
+          mapView={mapView}
+          data={data}
+          trajectory={trajectory}
+          moonTrajectory={moonTrajectory}
+          plannedTrajectory={plannedTrajectory}
+          plannedMoonTrajectory={plannedMoonTrajectory}
+          moonPos={moonPos}
+          artemisPos={artemisPos}
+          moonX={moonX}
+          moonY={moonY}
+          moonZ={moonZ}
+        />
+      </Canvas>
+    </ErrorBoundary>
   );
 }
