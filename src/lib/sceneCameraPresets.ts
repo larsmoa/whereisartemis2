@@ -29,4 +29,4 @@ export function getOrthographicEyeForView(view: OrthographicMapView): Orthograph
 }
 
 /** Initial offset from capsule (scene units) for the first frame of free orbit mode */
-export const FREE_ORBIT_INITIAL_OFFSET: [number, number, number] = [0.00002, 0.00002, 0.00002];
+export const FREE_ORBIT_INITIAL_OFFSET: [number, number, number] = [0.00008, 0.00008, 0.00008];

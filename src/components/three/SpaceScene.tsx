@@ -3,7 +3,7 @@
 import React, { type ComponentRef, useLayoutEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { TOUCH } from "three";
+import { TOUCH, Vector3 } from "three";
 import type {
   OrthographicCamera as OrthographicCameraType,
   PerspectiveCamera as PerspectiveCameraType,
@@ -156,7 +156,11 @@ function SceneBodies({
       )}
       {data && (
         <React.Suspense fallback={null}>
-          <OrionSpacecraft position={shiftedArtemisPos} view={view} />
+          <OrionSpacecraft
+            position={shiftedArtemisPos}
+            velocity={data.spacecraft.velocity}
+            view={view}
+          />
         </React.Suspense>
       )}
     </>
@@ -292,6 +296,25 @@ function SceneContentsFree({
     const ctrl = orbitRef.current;
     if (!ctrl) return;
     const cam = camera as PerspectiveCameraType;
+
+    // Calculate and set the camera's up vector to match the capsule's local up
+    if (data?.spacecraft.velocity) {
+      const vel = data.spacecraft.velocity;
+      const velocityVector = new Vector3(vel.x, vel.y, vel.z).normalize();
+      if (velocityVector.lengthSq() > 0) {
+        const globalUp = new Vector3(0, 0, 1);
+        // The capsule's local right vector
+        const right = new Vector3().crossVectors(globalUp, velocityVector).normalize();
+        // The capsule's local up vector
+        const localUp = new Vector3().crossVectors(velocityVector, right).normalize();
+        cam.up.copy(localUp);
+      } else {
+        cam.up.set(0, 0, 1);
+      }
+    } else {
+      cam.up.set(0, 0, 1);
+    }
+
     const [ax, ay, az] = shiftedArtemisPos;
 
     if (prevCraftSceneRef.current === null) {
@@ -313,7 +336,7 @@ function SceneContentsFree({
     }
     prevCraftSceneRef.current = [ax, ay, az];
     ctrl.update();
-  }, [shiftedArtemisPos, camera]);
+  }, [shiftedArtemisPos, camera, data?.spacecraft.velocity]);
   /* eslint-enable react-hooks/immutability */
 
   return (
@@ -383,7 +406,7 @@ export function SpaceScene({
             artemisPos[1] + FREE_ORBIT_INITIAL_OFFSET[1],
             artemisPos[2] + FREE_ORBIT_INITIAL_OFFSET[2],
           ],
-          up: [0, 1, 0],
+          up: [0, 0, 1],
           near: 0.0000001,
           far: 4000,
         }}
