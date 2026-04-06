@@ -289,7 +289,7 @@ function SceneContentsFree({
   );
 
   /* Three.js camera is mutable scene state; R3F does not wrap it in React state. */
-  /* eslint-disable react-hooks/immutability -- follow capsule; keep user orbit offset */
+  /* eslint-disable react-hooks/immutability -- camera and ctrl are mutable Three.js objects */
   useLayoutEffect(() => {
     const ctrl = orbitRef.current;
     if (!ctrl) return;
@@ -327,13 +327,20 @@ function SceneContentsFree({
       const dx = ax - px;
       const dy = ay - py;
       const dz = az - pz;
+      // Apply the spacecraft movement delta to BOTH camera and target to preserve
+      // the user's pan offset. Setting ctrl.target directly (without moving cam by
+      // the same delta) changes the camera-to-target distance if the user has panned.
       cam.position.x += dx;
       cam.position.y += dy;
       cam.position.z += dz;
-      ctrl.target.set(ax, ay, az);
+      ctrl.target.x += dx;
+      ctrl.target.y += dy;
+      ctrl.target.z += dz;
     }
     prevCraftSceneRef.current = [ax, ay, az];
-    ctrl.update();
+    // Do NOT call ctrl.update() here — OrbitControls calls update() internally on every
+    // animation frame. A manual call here double-applies damping, growing the
+    // camera-to-target distance on every data poll (zoom-out bug).
   }, [shiftedArtemisPos, camera, data?.spacecraft.velocity, initialCameraOffset]);
   /* eslint-enable react-hooks/immutability */
 
