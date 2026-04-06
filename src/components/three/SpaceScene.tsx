@@ -185,9 +185,6 @@ function SceneContentsOrtho({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
-  moonX,
-  moonY,
-  moonZ,
   initialZoom,
 }: {
   mapView: "top" | "side";
@@ -198,9 +195,6 @@ function SceneContentsOrtho({
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
-  moonX: number;
-  moonY: number;
-  moonZ: number;
   initialZoom: number;
 }): React.JSX.Element {
   const { camera } = useThree();
@@ -213,15 +207,12 @@ function SceneContentsOrtho({
     const cam = camera as OrthographicCameraType;
     const { position, up } = getOrthographicEyeForView(mapView);
 
-    // Initial target centered between Earth and Moon
-    const [mx, my, mz] = toScenePosition({ x: moonX, y: moonY, z: moonZ });
-
     cam.position.set(position[0], position[1], position[2]);
     cam.up.set(up[0], up[1], up[2]);
     cam.zoom = initialZoom;
     cam.updateProjectionMatrix();
 
-    ctrl.target.set(mx / 2, my / 2, mz / 2);
+    ctrl.target.set(artemisPos[0], artemisPos[1], artemisPos[2]);
     ctrl.update();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on view/zoom change
   }, [mapView, camera, initialZoom]);
@@ -463,9 +454,6 @@ export function SpaceScene({
           plannedMoonTrajectory={plannedMoonTrajectory}
           moonPos={moonPos}
           artemisPos={artemisPos}
-          moonX={moonX}
-          moonY={moonY}
-          moonZ={moonZ}
           initialZoom={orthoZoom}
         />
       </Canvas>
