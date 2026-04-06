@@ -33,7 +33,7 @@ export function useLatestImages(): UseQueryResult<ScrapedImage[], Error> {
   return useQuery({
     queryKey: LATEST_IMAGES_QUERY_KEY,
     queryFn: fetchLatestImages,
-    staleTime: 300 * 1000, // 5 minutes
-    refetchInterval: 300 * 1000, // Auto-refetch every 5 minutes
+    staleTime: 60 * 1000, // 1 minute
+    refetchInterval: 60 * 1000, // Auto-refetch every minute
   });
 }

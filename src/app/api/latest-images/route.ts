@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-export const revalidate = 300; // Revalidate every 5 minutes
+export const revalidate = 60; // Revalidate every minute
 
 export interface ScrapedImage {
   id: string;
@@ -14,7 +14,7 @@ export async function GET(): Promise<NextResponse> {
   try {
     // 1. Fetch the main Artemis II Multimedia page
     const multimediaRes = await fetch("https://www.nasa.gov/artemis-ii-multimedia/", {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
 
     if (!multimediaRes.ok) {
@@ -30,7 +30,7 @@ export async function GET(): Promise<NextResponse> {
 
     // 3. Fetch the gallery page
     const galleryRes = await fetch(galleryUrl, {
-      next: { revalidate: 300 },
+      next: { revalidate: 60 },
     });
 
     if (!galleryRes.ok) {
