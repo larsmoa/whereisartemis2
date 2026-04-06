@@ -32,6 +32,20 @@ function ImageCard({ item }: { item: ScrapedImage }): React.JSX.Element {
               </div>
             </div>
           )}
+          {item.url.includes("video") && (
+            <div className="absolute left-2 top-2">
+              <span className="rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 backdrop-blur-sm">
+                Video
+              </span>
+            </div>
+          )}
+          {!item.url.includes("video") && (
+            <div className="absolute left-2 top-2">
+              <span className="rounded-full border border-white/10 bg-black/60 px-2 py-0.5 text-[10px] uppercase tracking-wider text-zinc-400 backdrop-blur-sm">
+                Photo
+              </span>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex aspect-video w-full items-center justify-center bg-zinc-900">

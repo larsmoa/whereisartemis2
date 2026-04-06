@@ -58,12 +58,14 @@ export async function GET(): Promise<NextResponse> {
       const captionMatch = itemHtml.match(/class="hds-gallery-item-caption[^>]*>([\s\S]*?)<\/div>/);
       const imgMatch = itemHtml.match(/<img[^>]+src="([^"]+)"/);
       const videoMatch = itemHtml.match(/<video[^>]*>\s*<source[^>]+src="([^"]+)"/);
+      const posterMatch = itemHtml.match(/<video[^>]+poster="([^"]*)"/);
 
       if (!hrefMatch || (!imgMatch && !videoMatch)) continue;
 
       const pageUrl = hrefMatch[1];
       const imgUrl = imgMatch?.[1] ?? "";
       const videoUrl = videoMatch?.[1] ?? "";
+      const posterUrl = posterMatch?.[1] ?? "";
 
       if (!pageUrl || (!imgUrl && !videoUrl)) continue;
 
@@ -77,7 +79,7 @@ export async function GET(): Promise<NextResponse> {
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">");
 
-      const thumbnailUrl = imgUrl.replace(/&#038;/g, "&");
+      const thumbnailUrl = (imgUrl || posterUrl).replace(/&#038;/g, "&");
 
       // Extract the ID from the URL (e.g., amf-art002e008487 or video-detail/...)
       const idMatch = pageUrl.match(/(?:image-detail|video-detail)\/([^/]+)/);
