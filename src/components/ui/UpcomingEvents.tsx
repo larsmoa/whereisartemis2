@@ -89,11 +89,16 @@ function EventCard({ event }: { event: ArtemisEvent }): React.JSX.Element {
 
 export function UpcomingEvents(): React.JSX.Element {
   const [visibleCount, setVisibleCount] = useState(4);
-  const now = new Date();
+  const [now, setNow] = useState<Date | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNow(new Date());
+  }, []);
 
   // Parse and sort events chronologically, filter out past events
   const upcomingEvents = (eventsData as ArtemisEvent[])
-    .filter((event) => new Date(event.timestamp) >= now)
+    .filter((event) => (now ? new Date(event.timestamp) >= now : true))
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const visibleEvents = upcomingEvents.slice(0, visibleCount);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { useNasaFeed } from "@/hooks/useNasaFeed";
 import type { NasaFeedItem, NasaFeedItemType } from "@/lib/nasa-feed";
@@ -90,6 +90,12 @@ function SkeletonCard(): React.JSX.Element {
 export function MissionFeed(): React.JSX.Element {
   const { data, isPending, error } = useNasaFeed();
   const [visibleCount, setVisibleCount] = useState(4);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const items = data
     ? [...data.articles, ...data.media].sort(
@@ -98,6 +104,11 @@ export function MissionFeed(): React.JSX.Element {
     : [];
 
   const visibleItems = items.slice(0, visibleCount);
+
+  const showPending = !mounted || isPending;
+  const showError = mounted && error;
+  const showEmpty = mounted && !isPending && !error && items.length === 0;
+  const showContent = mounted && !isPending && items.length > 0;
 
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
@@ -108,13 +119,13 @@ export function MissionFeed(): React.JSX.Element {
       </div>
 
       <div className="px-4 pb-4 sm:px-6">
-        {error && (
+        {showError && (
           <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
             Failed to load mission content
           </div>
         )}
 
-        {isPending && (
+        {showPending && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }, (_, i) => (
               <SkeletonCard key={i} />
@@ -122,11 +133,11 @@ export function MissionFeed(): React.JSX.Element {
           </div>
         )}
 
-        {!isPending && !error && items.length === 0 && (
+        {showEmpty && (
           <p className="py-6 text-center text-sm text-zinc-600">No content available right now.</p>
         )}
 
-        {!isPending && items.length > 0 && (
+        {showContent && (
           <>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {visibleItems.map((item) => (

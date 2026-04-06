@@ -79,7 +79,7 @@ function ScenePanel({
           </div>
         </div>
       )}
-      <Suspense>
+      <Suspense fallback={<div className="h-full w-full bg-black" />}>
         <SpaceScene
           view={sceneView}
           data={data ?? null}
@@ -228,12 +228,12 @@ export default function Home(): React.JSX.Element {
     unitSystem,
     setUnitSystem,
     data: mounted ? data : undefined,
-    trajectory,
-    moonTrajectory,
-    plannedTrajectory,
-    plannedMoonTrajectory,
-    isPending,
-    error,
+    trajectory: mounted ? trajectory : null,
+    moonTrajectory: mounted ? moonTrajectory : undefined,
+    plannedTrajectory: mounted ? plannedTrajectory : null,
+    plannedMoonTrajectory: mounted ? plannedMoonTrajectory : undefined,
+    isPending: mounted ? isPending : true,
+    error: mounted ? error : null,
   };
 
   const statsProps = {
