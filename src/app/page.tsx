@@ -11,7 +11,13 @@ import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
-import { SceneViewToggle, UnitToggle, SpeedChart, UpcomingEvents } from "@/components/ui";
+import {
+  SceneViewToggle,
+  UnitToggle,
+  SpeedChart,
+  UpcomingEvents,
+  ImageReel,
+} from "@/components/ui";
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { MissionFeed } from "@/components/ui/MissionFeed";
 import type { SceneView, ScenePoint } from "@/types";
@@ -260,6 +266,7 @@ export default function Home(): React.JSX.Element {
           </div>
         </div>
         <UpcomingEvents />
+        <ImageReel />
         <MissionFeed />
         <PageFooter />
       </div>
@@ -289,6 +296,7 @@ export default function Home(): React.JSX.Element {
         </div>
         {/* Mission feed: scrolls below the tracker */}
         <UpcomingEvents />
+        <ImageReel />
         <MissionFeed />
         <PageFooter />
       </div>

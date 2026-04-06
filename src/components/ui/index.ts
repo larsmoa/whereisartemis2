@@ -7,3 +7,4 @@ export { SceneViewToggle } from "./SceneViewToggle";
 export { UnitToggle } from "./UnitToggle";
 export { SpeedChart } from "./SpeedChart";
 export { UpcomingEvents } from "./UpcomingEvents";
+export { ImageReel } from "./ImageReel";
