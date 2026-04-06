@@ -30,3 +30,59 @@ export function getOrthographicEyeForView(view: OrthographicMapView): Orthograph
 
 /** Initial offset from capsule (scene units) for the first frame of free orbit mode */
 export const FREE_ORBIT_INITIAL_OFFSET: [number, number, number] = [0.00008, 0.00008, 0.00008];
+
+/**
+ * Compute the initial camera offset for free orbit mode so the moon appears
+ * to the side of the capsule from the camera's perspective.
+ *
+ * Places the camera on the opposite side of the capsule from the moon (Earth
+ * side) with a lateral offset in the ecliptic plane.  Using the ecliptic-plane
+ * "right" direction (cross(eclipticNorth, moonDir)) keeps the camera at the
+ * same ecliptic latitude as the capsule, so the moon appears to the side rather
+ * than above/below — giving clear visual separation between the two objects.
+ *
+ * Falls back to FREE_ORBIT_INITIAL_OFFSET when moon and capsule are coincident.
+ */
+export function computeFreeOrbitInitialOffset(
+  artemisScenePos: [number, number, number],
+  moonScenePos: [number, number, number],
+): [number, number, number] {
+  const BACK_DISTANCE = 0.0003;
+  const LATERAL_DEG = 15;
+  const LATERAL_BIAS = BACK_DISTANCE * Math.tan((LATERAL_DEG * Math.PI) / 180);
+
+  const dx = moonScenePos[0] - artemisScenePos[0];
+  const dy = moonScenePos[1] - artemisScenePos[1];
+  const dz = moonScenePos[2] - artemisScenePos[2];
+  const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+  if (dist === 0) return FREE_ORBIT_INITIAL_OFFSET;
+
+  const mdx = dx / dist;
+  const mdy = dy / dist;
+  const mdz = dz / dist;
+
+  // right = cross(eclipticNorth=(0,0,1), moonDir) — lateral direction in the ecliptic plane
+  let rx = -mdy;
+  let ry = mdx;
+  let rz = 0;
+  const rLen = Math.sqrt(rx * rx + ry * ry + rz * rz);
+  if (rLen < 0.001) {
+    // moon nearly along ecliptic north — use +Y as fallback
+    rx = 0;
+    ry = 1;
+    rz = 0;
+  } else {
+    rx /= rLen;
+    ry /= rLen;
+    rz /= rLen;
+  }
+
+  // Offset camera backward from moon and laterally to one side so the moon
+  // appears clearly to the side of the capsule rather than overlapping it.
+  return [
+    -mdx * BACK_DISTANCE - rx * LATERAL_BIAS,
+    -mdy * BACK_DISTANCE - ry * LATERAL_BIAS,
+    -mdz * BACK_DISTANCE - rz * LATERAL_BIAS,
+  ];
+}

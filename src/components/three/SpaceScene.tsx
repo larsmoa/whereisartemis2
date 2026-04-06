@@ -13,7 +13,7 @@ import { MoonMesh } from "./MoonMesh";
 import { OrionSpacecraft } from "./OrionSpacecraft";
 import { TrajectoryLine } from "./TrajectoryLine";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { FREE_ORBIT_INITIAL_OFFSET, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
+import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition } from "@/lib/sceneCoords";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
 
@@ -255,6 +255,7 @@ function SceneContentsFree({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
+  initialCameraOffset,
 }: {
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
@@ -263,6 +264,7 @@ function SceneContentsFree({
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
+  initialCameraOffset: [number, number, number];
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
@@ -319,9 +321,9 @@ function SceneContentsFree({
     if (prevCraftSceneRef.current === null) {
       ctrl.target.set(ax, ay, az);
       cam.position.set(
-        ax + FREE_ORBIT_INITIAL_OFFSET[0],
-        ay + FREE_ORBIT_INITIAL_OFFSET[1],
-        az + FREE_ORBIT_INITIAL_OFFSET[2],
+        ax + initialCameraOffset[0],
+        ay + initialCameraOffset[1],
+        az + initialCameraOffset[2],
       );
     } else {
       const [px, py, pz] = prevCraftSceneRef.current;
@@ -335,7 +337,7 @@ function SceneContentsFree({
     }
     prevCraftSceneRef.current = [ax, ay, az];
     ctrl.update();
-  }, [shiftedArtemisPos, camera, data?.spacecraft.velocity]);
+  }, [shiftedArtemisPos, camera, data?.spacecraft.velocity, initialCameraOffset]);
   /* eslint-enable react-hooks/immutability */
 
   return (
@@ -393,6 +395,7 @@ export function SpaceScene({
   const canvasClassName = className ? `${className} touch-none` : "touch-none";
 
   if (view === "free") {
+    const freeOrbitOffset = computeFreeOrbitInitialOffset(artemisPos, moonPos);
     return (
       <ErrorBoundary>
         <Canvas
@@ -401,9 +404,9 @@ export function SpaceScene({
           camera={{
             fov: 52,
             position: [
-              artemisPos[0] + FREE_ORBIT_INITIAL_OFFSET[0],
-              artemisPos[1] + FREE_ORBIT_INITIAL_OFFSET[1],
-              artemisPos[2] + FREE_ORBIT_INITIAL_OFFSET[2],
+              artemisPos[0] + freeOrbitOffset[0],
+              artemisPos[1] + freeOrbitOffset[1],
+              artemisPos[2] + freeOrbitOffset[2],
             ],
             up: [0, 0, 1],
             near: 0.0000001,
@@ -418,6 +421,7 @@ export function SpaceScene({
             plannedMoonTrajectory={plannedMoonTrajectory}
             moonPos={moonPos}
             artemisPos={artemisPos}
+            initialCameraOffset={freeOrbitOffset}
           />
         </Canvas>
       </ErrorBoundary>
