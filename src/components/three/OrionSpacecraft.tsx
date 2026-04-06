@@ -45,7 +45,7 @@ export function OrionSpacecraft({
 
   // Apply the same scaling logic as the old ArtemisMesh
   const realisticScale = (0.005 / 6378.137) * EARTH_SCENE_RADIUS;
-  const fixedScale = view === "free" ? realisticScale : 0.226 * 4;
+  const fixedScale = view === "free" ? realisticScale : 0.226 * 2;
   const finalScale = fixedScale * normalizationFactor;
 
   // Calculate rotation based on velocity
