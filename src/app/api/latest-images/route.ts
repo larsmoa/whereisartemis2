@@ -79,6 +79,9 @@ export async function GET(): Promise<NextResponse> {
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">");
 
+      // For videos, the poster attribute is often empty in the NASA gallery HTML.
+      // We can try to extract a thumbnail from the video URL if it follows a predictable pattern,
+      // or we can use a generic fallback. The MissionFeed component handles empty thumbnails by showing a fallback.
       const thumbnailUrl = (imgUrl || posterUrl).replace(/&#038;/g, "&");
 
       // Extract the ID from the URL (e.g., amf-art002e008487 or video-detail/...)
@@ -98,9 +101,12 @@ export async function GET(): Promise<NextResponse> {
 
       // The full image URL is usually the thumbnail URL without the query params
       // e.g. ...~large.jpg?w=1920... -> ...~large.jpg
-      // For videos, we might not have a thumbnail, so we fallback to the video URL
       const url = thumbnailUrl ? (thumbnailUrl.split("?")[0] ?? thumbnailUrl) : videoUrl;
-      const finalThumbnailUrl = thumbnailUrl || videoUrl; // better than empty string
+
+      // If thumbnailUrl is empty (e.g. video with empty poster), we don't want to pass the video URL as the image source
+      // NASA often hosts a thumbnail with the same name as the mp4 but ending in .jpg
+      // If we don't have a thumbnail, we can use a generic placeholder or leave it empty to show the fallback
+      const finalThumbnailUrl = thumbnailUrl || "";
 
       // If it's a video, we might want to link to the page instead of the raw mp4
       const finalUrl = url.endsWith(".mp4")
