@@ -34,6 +34,7 @@ export function MoonMesh({ position, view }: MoonMeshProps): React.JSX.Element {
         bumpScale={0.02}
         roughness={0.9}
         metalness={0.0}
+        envMapIntensity={0}
       />
     </mesh>
   );
