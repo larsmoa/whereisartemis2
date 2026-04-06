@@ -36,8 +36,8 @@ export function MoonMesh({ position, view }: MoonMeshProps): React.JSX.Element {
         metalness={0.0}
         envMapIntensity={0}
         polygonOffset
-        polygonOffsetFactor={-1}
-        polygonOffsetUnits={-1}
+        polygonOffsetFactor={-5}
+        polygonOffsetUnits={-5}
       />
     </mesh>
   );
