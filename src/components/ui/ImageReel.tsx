@@ -23,6 +23,15 @@ function ImageCard({ item }: { item: ScrapedImage }): React.JSX.Element {
             className="object-cover transition-transform duration-300 group-hover:scale-105"
             unoptimized
           />
+          {item.url.includes("video") && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black/60 backdrop-blur-sm">
+                <svg className="h-4 w-4 fill-white" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex aspect-video w-full items-center justify-center bg-zinc-900">

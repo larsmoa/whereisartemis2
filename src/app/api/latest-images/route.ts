@@ -45,8 +45,9 @@ export async function GET(): Promise<NextResponse> {
     const images: ScrapedImage[] = [];
 
     // 4. Extract images from the gallery
-    // The gallery items are typically in .hds-gallery-item-single .hds-gallery-image
-    const itemBlocks = galleryHtml.split('class="hds-gallery-item-single hds-gallery-image"');
+    // The gallery items are typically in .hds-gallery-item-single
+    // We want both images and videos (which often have image thumbnails)
+    const itemBlocks = galleryHtml.split('class="hds-gallery-item-single');
 
     // Skip the first split as it's the HTML before the first item
     for (let i = 1; i < itemBlocks.length; i++) {
@@ -56,14 +57,17 @@ export async function GET(): Promise<NextResponse> {
       const hrefMatch = itemHtml.match(/href="([^"]+)"/);
       const captionMatch = itemHtml.match(/class="hds-gallery-item-caption[^>]*>([\s\S]*?)<\/div>/);
       const imgMatch = itemHtml.match(/<img[^>]+src="([^"]+)"/);
+      const videoMatch = itemHtml.match(/<video[^>]*>\s*<source[^>]+src="([^"]+)"/);
 
-      if (!hrefMatch || !imgMatch) continue;
+      if (!hrefMatch || (!imgMatch && !videoMatch)) continue;
 
       const pageUrl = hrefMatch[1];
-      const imgUrl = imgMatch[1];
-      if (!pageUrl || !imgUrl) continue;
+      const imgUrl = imgMatch?.[1] ?? "";
+      const videoUrl = videoMatch?.[1] ?? "";
 
-      const rawTitle = captionMatch?.[1]?.trim() ?? "Artemis II Image";
+      if (!pageUrl || (!imgUrl && !videoUrl)) continue;
+
+      const rawTitle = captionMatch?.[1]?.trim() ?? "Artemis II Media";
 
       // Decode HTML entities in title (basic ones)
       const title = rawTitle
@@ -75,9 +79,9 @@ export async function GET(): Promise<NextResponse> {
 
       const thumbnailUrl = imgUrl.replace(/&#038;/g, "&");
 
-      // Extract the ID from the URL (e.g., amf-art002e008487)
-      const idMatch = pageUrl.match(/image-detail\/([^/]+)/);
-      const id = idMatch?.[1] ?? `img-${Math.random().toString(36).substring(7)}`;
+      // Extract the ID from the URL (e.g., amf-art002e008487 or video-detail/...)
+      const idMatch = pageUrl.match(/(?:image-detail|video-detail)\/([^/]+)/);
+      const id = idMatch?.[1] ?? `media-${Math.random().toString(36).substring(7)}`;
 
       let publishedAt = new Date().toISOString();
       const dateMatch = title.match(
@@ -92,13 +96,22 @@ export async function GET(): Promise<NextResponse> {
 
       // The full image URL is usually the thumbnail URL without the query params
       // e.g. ...~large.jpg?w=1920... -> ...~large.jpg
-      const url = thumbnailUrl.split("?")[0] ?? thumbnailUrl;
+      // For videos, we might not have a thumbnail, so we fallback to the video URL
+      const url = thumbnailUrl ? (thumbnailUrl.split("?")[0] ?? thumbnailUrl) : videoUrl;
+      const finalThumbnailUrl = thumbnailUrl || videoUrl; // better than empty string
+
+      // If it's a video, we might want to link to the page instead of the raw mp4
+      const finalUrl = url.endsWith(".mp4")
+        ? pageUrl.startsWith("http")
+          ? pageUrl
+          : `https://www.nasa.gov${pageUrl}`
+        : url;
 
       images.push({
         id,
         title,
-        url,
-        thumbnailUrl,
+        url: finalUrl,
+        thumbnailUrl: finalThumbnailUrl,
         publishedAt,
       });
     }
