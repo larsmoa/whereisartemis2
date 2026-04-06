@@ -105,6 +105,7 @@ function SkeletonCard(): React.JSX.Element {
 export function ImageReel(): React.JSX.Element | null {
   const { data, isPending, error } = useLatestImages();
   const [mounted, setMounted] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(4);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -119,6 +120,10 @@ export function ImageReel(): React.JSX.Element | null {
   if (showError || showEmpty) {
     return null; // Fail gracefully by hiding the reel
   }
+
+  const handleLoadMore = (): void => {
+    setVisibleCount((prev) => prev + 4);
+  };
 
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
@@ -138,10 +143,20 @@ export function ImageReel(): React.JSX.Element | null {
         )}
 
         {showContent && (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {data.slice(0, 4).map((item) => (
-              <ImageCard key={item.id} item={item} />
-            ))}
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {data.slice(0, visibleCount).map((item) => (
+                <ImageCard key={item.id} item={item} />
+              ))}
+            </div>
+            {data.length > visibleCount && (
+              <button
+                onClick={handleLoadMore}
+                className="mx-auto mt-2 rounded-full border border-white/10 bg-white/5 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+              >
+                Load More
+              </button>
+            )}
           </div>
         )}
       </div>

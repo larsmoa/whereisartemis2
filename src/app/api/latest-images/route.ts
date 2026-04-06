@@ -123,7 +123,7 @@ export async function GET(): Promise<NextResponse> {
 
     // If we couldn't find any images in the specific gallery, we might want to fallback to other galleries
     // But for now, returning what we found
-    return NextResponse.json({ images: images.slice(0, 4) });
+    return NextResponse.json({ images: images });
   } catch {
     return NextResponse.json({ error: "Failed to fetch latest images" }, { status: 500 });
   }
