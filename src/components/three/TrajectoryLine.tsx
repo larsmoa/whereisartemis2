@@ -44,6 +44,8 @@ export function TrajectoryLine({
       color={color}
       transparent
       opacity={opacity}
+      depthWrite={false}
+      renderOrder={1}
       dashed={dashed}
       dashSize={0.5}
       gapSize={0.5}

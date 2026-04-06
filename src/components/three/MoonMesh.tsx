@@ -26,7 +26,7 @@ export function MoonMesh({ position, view }: MoonMeshProps): React.JSX.Element {
   const radius = view === "free" ? realisticRadius : MOON_RADIUS_SCENE;
 
   return (
-    <mesh position={position}>
+    <mesh position={position} renderOrder={0}>
       <sphereGeometry args={[radius, 64, 64]} />
       <meshStandardMaterial
         map={moonTexture}
@@ -35,6 +35,9 @@ export function MoonMesh({ position, view }: MoonMeshProps): React.JSX.Element {
         roughness={0.9}
         metalness={0.0}
         envMapIntensity={0}
+        polygonOffset
+        polygonOffsetFactor={-1}
+        polygonOffsetUnits={-1}
       />
     </mesh>
   );
