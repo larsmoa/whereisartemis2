@@ -2,8 +2,8 @@
 
 import React, { type ComponentRef, useLayoutEffect, useRef } from "react";
 import { Canvas, useThree } from "@react-three/fiber";
-import { OrbitControls, Environment } from "@react-three/drei";
-import { TOUCH, Vector3 } from "three";
+import { OrbitControls, Environment, useKTX2 } from "@react-three/drei";
+import { TOUCH, Vector3, EquirectangularReflectionMapping } from "three";
 import type {
   OrthographicCamera as OrthographicCameraType,
   PerspectiveCamera as PerspectiveCameraType,
@@ -82,6 +82,21 @@ interface SceneBodiesProps {
   origin?: [number, number, number];
 }
 
+function StarmapEnvironment({ view }: { view: SceneView }): React.JSX.Element | null {
+  const starmap = useKTX2("/textures/starmap_2020_4k_uastc.ktx2");
+
+  /* eslint-disable react-hooks/immutability -- Three.js textures are mutable */
+  useLayoutEffect(() => {
+    if (starmap && !Array.isArray(starmap)) {
+      starmap.mapping = EquirectangularReflectionMapping;
+    }
+  }, [starmap]);
+  /* eslint-enable react-hooks/immutability */
+
+  if (!starmap || Array.isArray(starmap)) return null;
+  return <Environment map={starmap} background={view === "free"} />;
+}
+
 function SceneBodies({
   view,
   data,
@@ -137,7 +152,9 @@ function SceneBodies({
     <>
       <ambientLight intensity={0.12} />
       <directionalLight position={[100, 50, 80]} intensity={2.2} />
-      <Environment files="/textures/starmap_2020_4k.exr" background={view === "free"} />
+      <React.Suspense fallback={null}>
+        <StarmapEnvironment view={view} />
+      </React.Suspense>
       {view !== "free" && <PointStars perspective={false} />}
       <EarthMesh position={shiftedEarthPos} />
       <MoonMesh position={shiftedMoonPos} view={view} />
