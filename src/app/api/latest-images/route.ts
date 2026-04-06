@@ -23,13 +23,10 @@ export async function GET(): Promise<NextResponse> {
 
     const multimediaHtml = await multimediaRes.text();
 
-    // 2. Find the link to the Flight Day Highlights gallery (or the first relevant gallery)
+    // 2. Find the link to the Journey to the Moon gallery (which has the latest images)
     // We look for the specific gallery that contains the latest in-flight images
-    const galleryMatch = multimediaHtml.match(
-      /href="([^"]*artemis-ii-flight-day-highlights[^"]*)"/,
-    );
-    const galleryUrl =
-      galleryMatch?.[1] ?? "https://www.nasa.gov/gallery/artemis-ii-flight-day-highlights/";
+    const galleryMatch = multimediaHtml.match(/href="([^"]*journey-to-the-moon[^"]*)"/);
+    const galleryUrl = galleryMatch?.[1] ?? "https://www.nasa.gov/gallery/journey-to-the-moon/";
 
     // 3. Fetch the gallery page
     const galleryRes = await fetch(galleryUrl, {
