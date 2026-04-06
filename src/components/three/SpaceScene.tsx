@@ -324,16 +324,6 @@ function SceneContentsFree({
       );
     } else {
       const [px, py, pz] = prevCraftSceneRef.current;
-      // Both ax and px are in the current floating-origin space. When the origin
-      // shifts, ax becomes nearly 0 and px still holds the old scene position
-      // (relative to the old origin). The difference ax - px is equivalent to
-      // the world-space delta of the craft MINUS the origin shift — which is
-      // exactly the scene-space delta needed to keep the camera tracking correctly.
-      // Proof: ax - px = (world - O_new) - (world_prev - O_old)
-      //                = world_delta - origin_delta
-      // The camera position in scene space must shift by -origin_delta (to keep
-      // the same world position) and by world_delta (to follow the craft), which
-      // sums to world_delta - origin_delta = ax - px. ✓
       const dx = ax - px;
       const dy = ay - py;
       const dz = az - pz;
@@ -420,10 +410,11 @@ export function SpaceScene({
           className={canvasClassName}
           camera={{
             fov: 52,
-            // Scene is rendered in floating-origin space where the spacecraft starts
-            // at [0,0,0] (origin = artemisPos at mount). Position the camera at the
-            // offset only — NOT artemisPos + offset — so it starts looking at the craft.
-            position: freeOrbitOffset,
+            position: [
+              artemisPos[0] + freeOrbitOffset[0],
+              artemisPos[1] + freeOrbitOffset[1],
+              artemisPos[2] + freeOrbitOffset[2],
+            ],
             up: [0, 0, 1],
             near: 0.0000001,
             far: 4000,
