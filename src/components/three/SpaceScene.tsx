@@ -13,9 +13,13 @@ import { MoonMesh } from "./MoonMesh";
 import { OrionSpacecraft } from "./OrionSpacecraft";
 import { TrajectoryLine } from "./TrajectoryLine";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition } from "@/lib/sceneCoords";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
+
+const ORTHO_ZOOM_MOBILE = 1.15;
+const ORTHO_ZOOM_DESKTOP = ORTHO_ZOOM_MOBILE * 2.7;
 
 type OrbitControlsHandle = ComponentRef<typeof OrbitControls>;
 
@@ -184,6 +188,7 @@ function SceneContentsOrtho({
   moonX,
   moonY,
   moonZ,
+  initialZoom,
 }: {
   mapView: "top" | "side";
   data: ArtemisData | null;
@@ -196,6 +201,7 @@ function SceneContentsOrtho({
   moonX: number;
   moonY: number;
   moonZ: number;
+  initialZoom: number;
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
@@ -212,13 +218,13 @@ function SceneContentsOrtho({
 
     cam.position.set(position[0], position[1], position[2]);
     cam.up.set(up[0], up[1], up[2]);
-    cam.zoom = 1.15;
+    cam.zoom = initialZoom;
     cam.updateProjectionMatrix();
 
     ctrl.target.set(mx / 2, my / 2, mz / 2);
     ctrl.update();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on view change
-  }, [mapView, camera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on view/zoom change
+  }, [mapView, camera, initialZoom]);
 
   return (
     <>
@@ -382,6 +388,9 @@ export function SpaceScene({
   plannedMoonTrajectory,
   className,
 }: SpaceSceneProps): React.JSX.Element {
+  const isDesktop = useIsDesktop();
+  const orthoZoom = isDesktop ? ORTHO_ZOOM_DESKTOP : ORTHO_ZOOM_MOBILE;
+
   const moonX = data?.moon.position.x ?? 384_400;
   const moonY = data?.moon.position.y ?? 0;
   const moonZ = data?.moon.position.z ?? 0;
@@ -440,7 +449,7 @@ export function SpaceScene({
         camera={{
           position: [...eye.position] as [number, number, number],
           up: [...eye.up] as [number, number, number],
-          zoom: 1.15,
+          zoom: orthoZoom,
           near: 0.1,
           far: 2000,
         }}
@@ -457,6 +466,7 @@ export function SpaceScene({
           moonX={moonX}
           moonY={moonY}
           moonZ={moonZ}
+          initialZoom={orthoZoom}
         />
       </Canvas>
     </ErrorBoundary>
