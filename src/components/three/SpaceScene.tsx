@@ -135,8 +135,8 @@ function SceneBodies({
 
   return (
     <>
-      <ambientLight intensity={0.25} />
-      <directionalLight position={[100, 50, 80]} intensity={1.8} />
+      <ambientLight intensity={0.04} />
+      <directionalLight position={[100, 50, 80]} intensity={2.2} />
       <Environment files="/textures/starmap_2020_4k.exr" background={view === "free"} />
       {view !== "free" && <PointStars perspective={false} />}
       <EarthMesh position={shiftedEarthPos} />

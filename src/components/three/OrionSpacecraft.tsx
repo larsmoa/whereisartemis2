@@ -1,8 +1,8 @@
 "use client";
 
 import * as THREE from "three";
-import React, { useMemo } from "react";
-import { useGLTF, Environment } from "@react-three/drei";
+import React, { useEffect, useMemo } from "react";
+import { useGLTF } from "@react-three/drei";
 import type { GLTF } from "three-stdlib";
 import type { SceneView, Vec3 } from "@/types";
 import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
@@ -48,6 +48,26 @@ export function OrionSpacecraft({
   const fixedScale = view === "free" ? realisticScale : 0.226 * 2;
   const finalScale = fixedScale * normalizationFactor;
 
+  // Clone GLTF materials so we can override envMapIntensity without mutating the shared asset
+  const mat1 = useMemo(() => {
+    const m = materials.blinn1SG.clone();
+    m.envMapIntensity = 0;
+    return m;
+  }, [materials.blinn1SG]);
+
+  const mat2 = useMemo(() => {
+    const m = materials.blinn2SG.clone();
+    m.envMapIntensity = 0;
+    return m;
+  }, [materials.blinn2SG]);
+
+  useEffect(() => {
+    return (): void => {
+      mat1.dispose();
+      mat2.dispose();
+    };
+  }, [mat1, mat2]);
+
   // Calculate rotation based on velocity
   const rotation = useMemo(() => {
     if (!velocity || (velocity.x === 0 && velocity.y === 0 && velocity.z === 0)) {
@@ -70,9 +90,8 @@ export function OrionSpacecraft({
 
   return (
     <group position={position} rotation={rotation} scale={finalScale} {...props} dispose={null}>
-      <Environment preset="city" />
-      <mesh geometry={nodes.model_0Mesh_group1.geometry} material={materials.blinn1SG} />
-      <mesh geometry={nodes.group1_model_1Mesh.geometry} material={materials.blinn2SG} />
+      <mesh geometry={nodes.model_0Mesh_group1.geometry} material={mat1} />
+      <mesh geometry={nodes.group1_model_1Mesh.geometry} material={mat2} />
     </group>
   );
 }
