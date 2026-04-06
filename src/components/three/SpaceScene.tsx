@@ -399,6 +399,26 @@ export function SpaceScene({
   const moonPos = toScenePosition({ x: moonX, y: moonY, z: moonZ });
   const artemisPos = toScenePosition({ x: craftX, y: craftY, z: craftZ });
 
+  // Ensure the past trajectory line terminates exactly at the current capsule position,
+  // and the planned trajectory line starts exactly at it.
+  // The trajectory APIs return 10-min-sampled Horizons data cached for 5 min, so both
+  // endpoints can lag the live capsule by hundreds of km — which at the extreme zoom of
+  // free-fly mode (camera 0.0003 scene units from the craft) appears as a large gap.
+  // Replace the last cached point of the past trajectory and the first cached point of
+  // the planned trajectory with the live capsule position. The cached API points can be
+  // up to 10 minutes stale; simply appending/prepending a new point creates a hairpin
+  // in the Catmull-Rom spline (the new point reverses direction back through the stale
+  // cached point). Replacing the stale endpoint instead gives a clean smooth terminus.
+  const trajectoryWithCurrent = React.useMemo<ScenePoint[] | null>(() => {
+    if (!trajectory || trajectory.length === 0) return trajectory;
+    return [...trajectory.slice(0, -1), artemisPos];
+  }, [trajectory, artemisPos]);
+
+  const plannedTrajectoryWithCurrent = React.useMemo<ScenePoint[] | null | undefined>(() => {
+    if (!plannedTrajectory || plannedTrajectory.length === 0) return plannedTrajectory;
+    return [artemisPos, ...plannedTrajectory.slice(1)];
+  }, [plannedTrajectory, artemisPos]);
+
   const canvasClassName = className ? `${className} touch-none` : "touch-none";
 
   if (view === "free") {
@@ -422,9 +442,9 @@ export function SpaceScene({
         >
           <SceneContentsFree
             data={data}
-            trajectory={trajectory}
+            trajectory={trajectoryWithCurrent}
             moonTrajectory={moonTrajectory}
-            plannedTrajectory={plannedTrajectory}
+            plannedTrajectory={plannedTrajectoryWithCurrent}
             plannedMoonTrajectory={plannedMoonTrajectory}
             moonPos={moonPos}
             artemisPos={artemisPos}
@@ -455,9 +475,9 @@ export function SpaceScene({
         <SceneContentsOrtho
           mapView={mapView}
           data={data}
-          trajectory={trajectory}
+          trajectory={trajectoryWithCurrent}
           moonTrajectory={moonTrajectory}
-          plannedTrajectory={plannedTrajectory}
+          plannedTrajectory={plannedTrajectoryWithCurrent}
           plannedMoonTrajectory={plannedMoonTrajectory}
           moonPos={moonPos}
           artemisPos={artemisPos}
