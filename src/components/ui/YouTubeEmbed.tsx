@@ -14,14 +14,21 @@ const isMissionStream = MISSION_STREAM_ID !== null;
 
 interface YouTubeEmbedProps {
   className?: string;
+  /** When true, renders without the left border (used in full-width prominence mode) */
+  borderless?: boolean;
 }
 
-export function YouTubeEmbed({ className = "" }: YouTubeEmbedProps): React.JSX.Element {
+export function YouTubeEmbed({
+  className = "",
+  borderless = false,
+}: YouTubeEmbedProps): React.JSX.Element {
   const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0`;
   const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
 
   return (
-    <div className={`flex flex-col border-l border-white/10 bg-black ${className}`}>
+    <div
+      className={`flex flex-col bg-black ${borderless ? "" : "border-l border-white/10"} ${className}`}
+    >
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-2">
         <span className="text-xs font-semibold uppercase tracking-widest text-zinc-400">
           {isMissionStream ? "Mission Stream" : "ISS Live"}

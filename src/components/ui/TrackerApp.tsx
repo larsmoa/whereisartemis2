@@ -7,7 +7,6 @@ import { useArtemisData } from "@/hooks/useArtemisData";
 import { useInterpolatedArtemisData } from "@/hooks/useInterpolatedArtemisData";
 import { useArtemisTrajectory } from "@/hooks/useArtemisTrajectory";
 import { useMoonTrajectory } from "@/hooks/useMoonTrajectory";
-import { useNextMilestone } from "@/hooks/useNextMilestone";
 import { useUnitSystem } from "@/hooks/useUnitSystem";
 import { StatCard } from "@/components/ui/StatCard";
 import { LiveBadge } from "@/components/ui/LiveBadge";
@@ -21,6 +20,12 @@ import {
 import { YouTubeEmbed } from "@/components/ui/YouTubeEmbed";
 import { MissionFeed } from "@/components/ui/MissionFeed";
 import { AboutFAQ } from "@/components/ui/AboutFAQ";
+import {
+  SplashdownCountdown,
+  useShowSplashdownCountdown,
+} from "@/components/ui/SplashdownCountdown";
+import { MissionSummary } from "@/components/ui/MissionSummary";
+import { NextEventCard } from "@/components/ui/NextEventCard";
 import type { SceneView, ScenePoint } from "@/types";
 import {
   formatDistance,
@@ -30,6 +35,7 @@ import {
   formatDelay,
 } from "@/lib/format";
 import type { UnitSystem } from "@/lib/format";
+import { getMissionPhase, type MissionPhase } from "@/lib/mission-phase";
 
 const SpaceScene = dynamic(
   () => import("@/components/three/SpaceScene").then((m) => m.SpaceScene),
@@ -49,6 +55,7 @@ function ScenePanel({
   isPending,
   error,
   isMobile,
+  missionPhase,
 }: {
   sceneView: SceneView;
   setSceneView: (v: SceneView) => void;
@@ -62,6 +69,7 @@ function ScenePanel({
   isPending: boolean;
   error: ReturnType<typeof useArtemisData>["error"];
   isMobile: boolean;
+  missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
   return (
     <div className="relative overflow-hidden h-full w-full">
@@ -94,6 +102,7 @@ function ScenePanel({
           plannedTrajectory={plannedTrajectory ?? null}
           plannedMoonTrajectory={plannedMoonTrajectory ?? null}
           className="h-full w-full"
+          missionPhase={missionPhase}
         />
       </Suspense>
       <div className="pointer-events-none absolute bottom-4 left-1/2 max-w-[min(100%,24rem)] -translate-x-1/2 rounded-full border border-white/10 bg-black/60 px-4 py-1.5 text-center text-xs text-zinc-500 backdrop-blur-sm">
@@ -112,15 +121,13 @@ function ScenePanel({
 function StatsSection({
   data,
   trajectoryData,
-  milestone,
-  secondsRemaining,
   unitSystem,
+  showSplashdownCountdown,
 }: {
   data: ReturnType<typeof useArtemisData>["data"];
   trajectoryData: ReturnType<typeof useArtemisTrajectory>["data"];
-  milestone: ReturnType<typeof useNextMilestone>["milestone"];
-  secondsRemaining: ReturnType<typeof useNextMilestone>["secondsRemaining"];
   unitSystem: UnitSystem;
+  showSplashdownCountdown: boolean;
 }): React.JSX.Element {
   return (
     <section className="border-t border-white/10 bg-black/80 backdrop-blur-sm">
@@ -154,11 +161,7 @@ function StatsSection({
           value={data ? formatElapsed(data.missionElapsedSeconds) : "—"}
           sub="since launch"
         />
-        <StatCard
-          label={milestone ? `Next: ${milestone.name}` : "Next Milestone"}
-          value={milestone ? formatElapsed(secondsRemaining) : "—"}
-          sub={milestone ? "countdown" : "mission complete"}
-        />
+        {showSplashdownCountdown ? <SplashdownCountdown /> : <NextEventCard />}
       </div>
     </section>
   );
@@ -207,9 +210,10 @@ export function TrackerApp(): React.JSX.Element {
   const { data: plannedTrajectoryData } = useArtemisTrajectory("future");
   const { data: moonTrajectory } = useMoonTrajectory("past");
   const { data: plannedMoonTrajectory } = useMoonTrajectory("future");
-  const { milestone, secondsRemaining } = useNextMilestone();
   const { unitSystem, setUnitSystem } = useUnitSystem();
+  const showSplashdownCountdown = useShowSplashdownCountdown();
   const [mounted, setMounted] = useState(false);
+  const [missionPhase, setMissionPhase] = useState<MissionPhase>(() => getMissionPhase(new Date()));
 
   const trajectory = useMemo(
     () => trajectoryData?.map((p) => p.position) ?? null,
@@ -225,8 +229,22 @@ export function TrackerApp(): React.JSX.Element {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    const tick = (): void => setMissionPhase(getMissionPhase(new Date()));
+    const id = setInterval(tick, 10_000);
+    return () => clearInterval(id);
+  }, []);
+
   const lastUpdated = mounted && dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const [sceneView, setSceneView] = useState<SceneView>("top");
+
+  const isProminentPhase =
+    mounted &&
+    (missionPhase === "REENTRY" ||
+      missionPhase === "SPLASHDOWN_MOMENT" ||
+      missionPhase === "COMPLETE");
+
+  const isMissionComplete = mounted && missionPhase === "COMPLETE";
 
   const scenePanelProps = {
     sceneView,
@@ -240,14 +258,14 @@ export function TrackerApp(): React.JSX.Element {
     plannedMoonTrajectory: mounted ? plannedMoonTrajectory : undefined,
     isPending: mounted ? isPending : true,
     error: mounted ? error : null,
+    missionPhase: mounted ? missionPhase : undefined,
   };
 
   const statsProps = {
     data: mounted ? data : undefined,
     trajectoryData: mounted ? trajectoryData : undefined,
-    milestone: mounted ? milestone : null,
-    secondsRemaining: mounted ? secondsRemaining : 0,
     unitSystem,
+    showSplashdownCountdown: mounted ? showSplashdownCountdown : false,
   };
 
   return (
@@ -258,7 +276,11 @@ export function TrackerApp(): React.JSX.Element {
         <div className="h-[45svh] shrink-0">
           <ScenePanel {...scenePanelProps} isMobile={true} />
         </div>
-        <StatsSection {...statsProps} />
+        {isMissionComplete ? (
+          <MissionSummary unitSystem={unitSystem} />
+        ) : (
+          <StatsSection {...statsProps} />
+        )}
         {/* YouTube embed: full-width 16:9 below stats */}
         <div className="border-t border-white/10">
           <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
@@ -277,23 +299,38 @@ export function TrackerApp(): React.JSX.Element {
         {/* Top tracker section: fixed to viewport height */}
         <div className="grid" style={{ gridTemplateRows: "auto 1fr auto", height: "100dvh" }}>
           <PageHeader lastUpdated={lastUpdated} />
-          {/* Scene row: adjustable split between 3D scene and YouTube */}
+          {/* Scene row: resizable split normally; full-width YouTube during critical phases */}
           <div className="flex min-h-0 relative">
-            <Group orientation="horizontal">
-              <Panel defaultSize={67} minSize={20}>
-                <div className="h-full w-full">
+            {isProminentPhase ? (
+              <div className="flex h-full w-full flex-col">
+                <div className="h-[35%] shrink-0 border-b border-white/10">
                   <ScenePanel {...scenePanelProps} isMobile={false} />
                 </div>
-              </Panel>
-              <Separator className="w-1 cursor-col-resize bg-white/10 hover:bg-white/30 active:bg-white/50 transition-colors z-30" />
-              <Panel defaultSize={33} minSize={20}>
-                <div className="h-full w-full relative">
-                  <YouTubeEmbed className="h-full" />
+                <div className="min-h-0 flex-1">
+                  <YouTubeEmbed className="h-full" borderless />
                 </div>
-              </Panel>
-            </Group>
+              </div>
+            ) : (
+              <Group orientation="horizontal">
+                <Panel defaultSize={67} minSize={20}>
+                  <div className="h-full w-full">
+                    <ScenePanel {...scenePanelProps} isMobile={false} />
+                  </div>
+                </Panel>
+                <Separator className="w-1 cursor-col-resize bg-white/10 hover:bg-white/30 active:bg-white/50 transition-colors z-30" />
+                <Panel defaultSize={33} minSize={20}>
+                  <div className="h-full w-full relative">
+                    <YouTubeEmbed className="h-full" />
+                  </div>
+                </Panel>
+              </Group>
+            )}
           </div>
-          <StatsSection {...statsProps} />
+          {isMissionComplete ? (
+            <MissionSummary unitSystem={unitSystem} />
+          ) : (
+            <StatsSection {...statsProps} />
+          )}
         </div>
         {/* Mission feed: scrolls below the tracker */}
         <UpcomingEvents />

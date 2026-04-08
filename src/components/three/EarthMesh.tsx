@@ -3,8 +3,15 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
+import { AdditiveBlending } from "three";
 import type { Mesh } from "three";
 import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+
+interface EarthMeshProps {
+  position?: [number, number, number];
+  /** When true, renders a warm amber atmospheric glow (re-entry phase) */
+  reentryGlow?: boolean;
+}
 
 /**
  * Earth — realistic sphere at the scene origin with textures and clouds.
@@ -12,7 +19,8 @@ import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
  */
 export function EarthMesh({
   position = [0, 0, 0],
-}: { position?: [number, number, number] } = {}): React.JSX.Element {
+  reentryGlow = false,
+}: EarthMeshProps = {}): React.JSX.Element {
   const earthRef = useRef<Mesh>(null);
   const cloudsRef = useRef<Mesh>(null);
 
@@ -47,10 +55,23 @@ export function EarthMesh({
         <sphereGeometry args={[EARTH_SCENE_RADIUS + 0.065, 64, 64]} />
         <meshStandardMaterial
           map={cloudsMap ?? null}
-          transparent={true}
+          transparent
           opacity={0.8}
-          blending={2} // Additive blending for clouds
+          blending={AdditiveBlending}
           depthWrite={false}
+        />
+      </mesh>
+
+      {/* Atmospheric glow — intensified during re-entry */}
+      <mesh>
+        <sphereGeometry args={[EARTH_SCENE_RADIUS + 0.35, 48, 48]} />
+        <meshStandardMaterial
+          color={reentryGlow ? "#ff6020" : "#4488ff"}
+          transparent
+          opacity={reentryGlow ? 0.12 : 0.04}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          side={2}
         />
       </mesh>
     </group>

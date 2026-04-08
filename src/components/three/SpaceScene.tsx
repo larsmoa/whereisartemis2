@@ -15,7 +15,8 @@ import { TrajectoryLine } from "./TrajectoryLine";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
-import { toScenePosition } from "@/lib/sceneCoords";
+import { toScenePosition, EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import type { MissionPhase } from "@/lib/mission-phase";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
 
 const ORTHO_ZOOM_MOBILE = 1.15;
@@ -31,6 +32,7 @@ interface SpaceSceneProps {
   plannedTrajectory?: ScenePoint[] | null | undefined;
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   className?: string;
+  missionPhase?: MissionPhase | undefined;
 }
 
 /** Generated once at module load — stable across re-renders, avoids purity rule */
@@ -70,6 +72,57 @@ function PointStars({ perspective }: { perspective: boolean }): React.JSX.Elemen
   );
 }
 
+/**
+ * Draws the re-entry descent arc from the last planned trajectory point down to
+ * Earth's surface in the same radial direction.
+ */
+function ReentryArc({
+  lastPoint,
+  origin = [0, 0, 0],
+}: {
+  lastPoint: ScenePoint;
+  origin?: [number, number, number];
+}): React.JSX.Element | null {
+  const arcPoints = React.useMemo<ScenePoint[]>(() => {
+    const [lx, ly, lz] = lastPoint;
+    const [ox, oy, oz] = origin;
+
+    // Shift into scene-local coordinates
+    const px = lx - ox;
+    const py = ly - oy;
+    const pz = lz - oz;
+
+    const dist = Math.sqrt(px * px + py * py + pz * pz);
+    if (dist < EARTH_SCENE_RADIUS) return [];
+
+    // Unit vector pointing from Earth centre toward the last known position
+    const ux = px / dist;
+    const uy = py / dist;
+    const uz = pz / dist;
+
+    // Earth surface endpoint in the same radial direction
+    const surfX = ux * EARTH_SCENE_RADIUS;
+    const surfY = uy * EARTH_SCENE_RADIUS;
+    const surfZ = uz * EARTH_SCENE_RADIUS;
+
+    // Midpoint — pulled slightly inward and offset perpendicular for a curved arc
+    const midR = (dist + EARTH_SCENE_RADIUS) * 0.5 * 0.95;
+    const midX = ux * midR;
+    const midY = uy * midR;
+    const midZ = uz * midR;
+
+    return [
+      [px, py, pz],
+      [midX, midY, midZ],
+      [surfX, surfY, surfZ],
+    ];
+  }, [lastPoint, origin]);
+
+  if (arcPoints.length < 2) return null;
+
+  return <TrajectoryLine points={arcPoints} color="#ff8040" opacity={0.7} lineWidth={2} />;
+}
+
 interface SceneBodiesProps {
   view: SceneView;
   data: ArtemisData | null;
@@ -80,6 +133,7 @@ interface SceneBodiesProps {
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   origin?: [number, number, number];
+  missionPhase?: MissionPhase | undefined;
 }
 
 function StarmapEnvironment({ view }: { view: SceneView }): React.JSX.Element | null {
@@ -107,7 +161,12 @@ function SceneBodies({
   moonPos,
   artemisPos,
   origin = [0, 0, 0],
+  missionPhase,
 }: SceneBodiesProps): React.JSX.Element {
+  const isReentry =
+    missionPhase === "REENTRY" ||
+    missionPhase === "SPLASHDOWN_MOMENT" ||
+    missionPhase === "COMPLETE";
   const shiftedEarthPos = React.useMemo<[number, number, number]>(
     () => [-origin[0], -origin[1], -origin[2]],
     [origin],
@@ -148,6 +207,12 @@ function SceneBodies({
     [plannedTrajectory, shiftTrajectory],
   );
 
+  const lastPlannedPoint = React.useMemo<ScenePoint | null>(() => {
+    const src = shiftedPlannedTrajectory ?? shiftedTrajectory;
+    if (!src || src.length === 0) return null;
+    return src[src.length - 1] ?? null;
+  }, [shiftedPlannedTrajectory, shiftedTrajectory]);
+
   return (
     <>
       <ambientLight intensity={0.12} />
@@ -156,7 +221,7 @@ function SceneBodies({
         <StarmapEnvironment view={view} />
       </React.Suspense>
       {view !== "free" && <PointStars perspective={false} />}
-      <EarthMesh position={shiftedEarthPos} />
+      <EarthMesh position={shiftedEarthPos} reentryGlow={isReentry} />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
         <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.4} />
@@ -175,6 +240,7 @@ function SceneBodies({
       {shiftedPlannedTrajectory && (
         <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.3} dashed />
       )}
+      {isReentry && lastPlannedPoint && <ReentryArc lastPoint={lastPlannedPoint} />}
       {data && (
         <React.Suspense fallback={null}>
           <OrionSpacecraft
@@ -203,6 +269,7 @@ function SceneContentsOrtho({
   moonPos,
   artemisPos,
   initialZoom,
+  missionPhase,
 }: {
   mapView: "top" | "side";
   data: ArtemisData | null;
@@ -213,6 +280,7 @@ function SceneContentsOrtho({
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   initialZoom: number;
+  missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
@@ -245,6 +313,7 @@ function SceneContentsOrtho({
         plannedMoonTrajectory={plannedMoonTrajectory}
         moonPos={moonPos}
         artemisPos={artemisPos}
+        missionPhase={missionPhase}
       />
       <OrbitControls
         ref={orbitRef}
@@ -270,6 +339,7 @@ function SceneContentsFree({
   moonPos,
   artemisPos,
   initialCameraOffset,
+  missionPhase,
 }: {
   data: ArtemisData | null;
   trajectory: ScenePoint[] | null;
@@ -279,6 +349,7 @@ function SceneContentsFree({
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   initialCameraOffset: [number, number, number];
+  missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
@@ -373,6 +444,7 @@ function SceneContentsFree({
         moonPos={moonPos}
         artemisPos={artemisPos}
         origin={origin}
+        missionPhase={missionPhase}
       />
       <OrbitControls
         ref={orbitRef}
@@ -402,6 +474,7 @@ export function SpaceScene({
   plannedTrajectory,
   plannedMoonTrajectory,
   className,
+  missionPhase,
 }: SpaceSceneProps): React.JSX.Element {
   const isDesktop = useIsDesktop();
   const orthoZoom = isDesktop ? ORTHO_ZOOM_DESKTOP : ORTHO_ZOOM_MOBILE;
@@ -466,6 +539,7 @@ export function SpaceScene({
             moonPos={moonPos}
             artemisPos={artemisPos}
             initialCameraOffset={freeOrbitOffset}
+            missionPhase={missionPhase}
           />
         </Canvas>
       </ErrorBoundary>
@@ -499,6 +573,7 @@ export function SpaceScene({
           moonPos={moonPos}
           artemisPos={artemisPos}
           initialZoom={orthoZoom}
+          missionPhase={missionPhase}
         />
       </Canvas>
     </ErrorBoundary>

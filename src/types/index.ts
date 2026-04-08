@@ -60,3 +60,46 @@ export interface ArtemisEvent {
   thumbnail: string;
   url?: string;
 }
+
+export type ActivityType =
+  | "maneuver"
+  | "science"
+  | "sleep"
+  | "meal"
+  | "pao"
+  | "config"
+  | "exercise"
+  | "off-duty"
+  | "other";
+
+export interface TimelineMilestone {
+  name: string;
+  description: string;
+  metMs: number;
+}
+
+export interface TimelinePhase {
+  phase: string;
+  startMetMs: number;
+  endMetMs: number;
+}
+
+export interface TimelineActivity {
+  name: string;
+  type: ActivityType;
+  startMetMs: number;
+  endMetMs: number;
+}
+
+export interface TimelineAttitude {
+  mode: string;
+  startMetMs: number;
+  endMetMs: number;
+}
+
+export interface ArtemisTimeline {
+  milestones: TimelineMilestone[];
+  phases: TimelinePhase[];
+  activities: TimelineActivity[];
+  attitudes: TimelineAttitude[];
+}
