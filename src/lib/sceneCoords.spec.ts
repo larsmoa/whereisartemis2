@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { EARTH_SCENE_RADIUS, toScenePosition, latLonToSphereLocal } from "./sceneCoords";
+import {
+  EARTH_SCENE_RADIUS,
+  toScenePosition,
+  latLonToSphereLocal,
+  latLonToSceneWorld,
+} from "./sceneCoords";
 
 const EARTH_RADIUS_KM = 6378.137;
 
@@ -85,5 +90,44 @@ describe("latLonToSphereLocal", () => {
     const [x, y, z] = latLonToSphereLocal(32.5, -119.5, R);
     const mag = Math.sqrt(x * x + y * y + z * z);
     expect(mag).toBeCloseTo(R, 6);
+  });
+});
+
+describe("latLonToSceneWorld", () => {
+  const R = 5.0;
+
+  it("result magnitude equals the given radius regardless of lat, lon, or GMST", () => {
+    const cases: [number, number, number][] = [
+      [0, 0, 0],
+      [32.5, -119.5, 1.23],
+      [90, 0, 2.5],
+      [-45, 90, 0],
+    ];
+    for (const [lat, lon, gmst] of cases) {
+      const [x, y, z] = latLonToSceneWorld(lat, lon, R, gmst);
+      const mag = Math.sqrt(x * x + y * y + z * z);
+      expect(mag).toBeCloseTo(R, 5);
+    }
+  });
+
+  it("at GMST=0, Greenwich equator (0°N, 0°E) points along scene +X", () => {
+    // Greenwich at equator is at local +X in the sphere frame, and GROUP_TILT_X
+    // rotation around X leaves the X component unchanged.
+    const [x, _y, _z] = latLonToSceneWorld(0, 0, R, 0);
+    expect(x).toBeCloseTo(R, 5);
+  });
+
+  it("rotating GMST by 2π returns the same position", () => {
+    const [x1, y1, z1] = latLonToSceneWorld(20, -117, R, 0.5);
+    const [x2, y2, z2] = latLonToSceneWorld(20, -117, R, 0.5 + 2 * Math.PI);
+    expect(x1).toBeCloseTo(x2, 5);
+    expect(y1).toBeCloseTo(y2, 5);
+    expect(z1).toBeCloseTo(z2, 5);
+  });
+
+  it("different GMST values produce different world positions", () => {
+    const [x1] = latLonToSceneWorld(0, 0, R, 0);
+    const [x2] = latLonToSceneWorld(0, 0, R, Math.PI / 2);
+    expect(x1).not.toBeCloseTo(x2, 2);
   });
 });

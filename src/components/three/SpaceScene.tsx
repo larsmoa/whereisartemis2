@@ -15,10 +15,30 @@ import { TrajectoryLine } from "./TrajectoryLine";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
-import { toScenePosition, EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import { toScenePosition, EARTH_SCENE_RADIUS, latLonToSceneWorld } from "@/lib/sceneCoords";
 import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
+import {
+  SPLASHDOWN_LAT_DEG,
+  SPLASHDOWN_LON_DEG,
+  SPLASHDOWN_ACTUAL_TIME,
+} from "@/lib/mission-phase";
 import type { MissionPhase } from "@/lib/mission-phase";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
+
+/** GMST at the planned splashdown moment — stable constant, computed once */
+const SPLASHDOWN_GMST = greenwichMeanSiderealTime(SPLASHDOWN_ACTUAL_TIME);
+
+/**
+ * Scene world position of the splashdown site at the moment of splashdown,
+ * accounting for the Earth's orientation (GMST + GROUP_TILT_X).
+ * Earth is at scene origin, so this is the arc's surface endpoint.
+ */
+const SPLASHDOWN_SCENE_POS: [number, number, number] = latLonToSceneWorld(
+  SPLASHDOWN_LAT_DEG,
+  SPLASHDOWN_LON_DEG,
+  EARTH_SCENE_RADIUS,
+  SPLASHDOWN_GMST,
+);
 
 const ORTHO_ZOOM_MOBILE = 1.15;
 const ORTHO_ZOOM_DESKTOP = ORTHO_ZOOM_MOBILE * 2.7;
@@ -74,54 +94,125 @@ function PointStars({ perspective }: { perspective: boolean }): React.JSX.Elemen
 }
 
 /**
- * Draws the re-entry descent arc from the last planned trajectory point down to
- * Earth's surface in the same radial direction.
+ * Draws the re-entry descent arc using a Hermite cubic spline.
+ *
+ * Start tangent  — the real incoming approach direction (prevPoint → lastPoint),
+ *                  so the arc continues as a smooth extension of the trajectory.
+ * End tangent    — radially inward at the splashdown site, simulating the near-
+ *                  vertical parachute descent at the end of re-entry.
+ * The curve is sampled into 20 points and passed to TrajectoryLine.
+ *
+ * Coordinate note: lastPoint is in the floating-origin frame; splashdownPos is in
+ * scene world space and is shifted into the same frame here. Vectors from the
+ * Earth centre equal the corresponding unshifted world-space coordinates because
+ * the floating-origin shift cancels (lastPoint = origPt − origin, so
+ * lastPoint + origin = origPt = vector from Earth centre at [0,0,0]).
  */
 function ReentryArc({
+  prevPoint,
   lastPoint,
+  splashdownPos,
   origin = [0, 0, 0],
 }: {
+  prevPoint?: ScenePoint | null;
   lastPoint: ScenePoint;
+  splashdownPos: [number, number, number];
   origin?: [number, number, number];
 }): React.JSX.Element | null {
   const arcPoints = React.useMemo<ScenePoint[]>(() => {
     const [lx, ly, lz] = lastPoint;
     const [ox, oy, oz] = origin;
+    const [spx, spy, spz] = splashdownPos;
 
-    // Shift into scene-local coordinates
-    const px = lx - ox;
-    const py = ly - oy;
-    const pz = lz - oz;
+    // Guard: entry point must be above the surface
+    const sX = lx + ox;
+    const sY = ly + oy;
+    const sZ = lz + oz;
+    if (Math.sqrt(sX * sX + sY * sY + sZ * sZ) < EARTH_SCENE_RADIUS) return [];
 
-    const dist = Math.sqrt(px * px + py * py + pz * pz);
-    if (dist < EARTH_SCENE_RADIUS) return [];
+    // --- Hermite control points in floating-origin frame ---
+    const p0x = lx,
+      p0y = ly,
+      p0z = lz;
+    const p1x = spx - ox,
+      p1y = spy - oy,
+      p1z = spz - oz;
 
-    // Unit vector pointing from Earth centre toward the last known position
-    const ux = px / dist;
-    const uy = py / dist;
-    const uz = pz / dist;
+    // Chord length — used to scale both tangents for a well-proportioned curve
+    const cx = p1x - p0x,
+      cy = p1y - p0y,
+      cz = p1z - p0z;
+    const chord = Math.sqrt(cx * cx + cy * cy + cz * cz);
+    if (chord === 0) return [];
 
-    // Earth surface endpoint in the same radial direction
-    const surfX = ux * EARTH_SCENE_RADIUS;
-    const surfY = uy * EARTH_SCENE_RADIUS;
-    const surfZ = uz * EARTH_SCENE_RADIUS;
+    // Start tangent: incoming approach direction × 2 × chord.
+    // The ×2 scale makes the arc travel noticeably in the approach direction
+    // before beginning its turn, giving a smooth visual continuation.
+    let t0x: number, t0y: number, t0z: number;
+    if (prevPoint) {
+      const [pvx, pvy, pvz] = prevPoint;
+      const dvx = lx - pvx,
+        dvy = ly - pvy,
+        dvz = lz - pvz;
+      const dvLen = Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz);
+      if (dvLen > 0) {
+        t0x = (dvx / dvLen) * chord * 2;
+        t0y = (dvy / dvLen) * chord * 2;
+        t0z = (dvz / dvLen) * chord * 2;
+      } else {
+        // prevPoint coincides with lastPoint — fall through to radial fallback
+        t0x = (-sX / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
+        t0y = (-sY / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
+        t0z = (-sZ / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
+      }
+    } else {
+      // No prevPoint: fall back to radially inward (approaching from deep space)
+      const sLen = Math.sqrt(sX * sX + sY * sY + sZ * sZ);
+      t0x = (-sX / sLen) * chord * 2;
+      t0y = (-sY / sLen) * chord * 2;
+      t0z = (-sZ / sLen) * chord * 2;
+    }
 
-    // Midpoint — pulled slightly inward and offset perpendicular for a curved arc
-    const midR = (dist + EARTH_SCENE_RADIUS) * 0.5 * 0.95;
-    const midX = ux * midR;
-    const midY = uy * midR;
-    const midZ = uz * midR;
+    // End tangent: radially inward at splashdown (vertical parachute descent).
+    // splashdownPos is already in world space = vector from Earth centre.
+    const spLen = Math.sqrt(spx * spx + spy * spy + spz * spz);
+    const t1x = (-spx / spLen) * chord * 0.6;
+    const t1y = (-spy / spLen) * chord * 0.6;
+    const t1z = (-spz / spLen) * chord * 0.6;
 
-    return [
-      [px, py, pz],
-      [midX, midY, midZ],
-      [surfX, surfY, surfZ],
-    ];
-  }, [lastPoint, origin]);
+    // Sample 20 points along the Hermite cubic
+    const N = 20;
+    const pts: ScenePoint[] = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const t2 = t * t;
+      const t3 = t2 * t;
+      const h00 = 2 * t3 - 3 * t2 + 1;
+      const h10 = t3 - 2 * t2 + t;
+      const h01 = -2 * t3 + 3 * t2;
+      const h11 = t3 - t2;
+      pts.push([
+        h00 * p0x + h10 * t0x + h01 * p1x + h11 * t1x,
+        h00 * p0y + h10 * t0y + h01 * p1y + h11 * t1y,
+        h00 * p0z + h10 * t0z + h01 * p1z + h11 * t1z,
+      ]);
+    }
+    return pts;
+  }, [prevPoint, lastPoint, splashdownPos, origin]);
 
   if (arcPoints.length < 2) return null;
 
-  return <TrajectoryLine points={arcPoints} color="#ff8040" opacity={0.7} lineWidth={2} />;
+  return (
+    <TrajectoryLine
+      points={arcPoints}
+      color="#a03800"
+      opacity={0.5}
+      lineWidth={2}
+      dashed
+      dashSize={0.125}
+      gapSize={0.125}
+    />
+  );
 }
 
 interface SceneBodiesProps {
@@ -174,6 +265,13 @@ function SceneBodies({
     missionPhase === "REENTRY" ||
     missionPhase === "SPLASHDOWN_MOMENT" ||
     missionPhase === "COMPLETE";
+
+  // Show the re-entry arc as a landing preview during the return leg and all later phases
+  const showReentryArc =
+    missionPhase === "RETURN" ||
+    missionPhase === "REENTRY" ||
+    missionPhase === "SPLASHDOWN_MOMENT" ||
+    missionPhase === "COMPLETE";
   const shiftedEarthPos = React.useMemo<[number, number, number]>(
     () => [-origin[0], -origin[1], -origin[2]],
     [origin],
@@ -220,6 +318,12 @@ function SceneBodies({
     return src[src.length - 1] ?? null;
   }, [shiftedPlannedTrajectory, shiftedTrajectory]);
 
+  const prevPlannedPoint = React.useMemo<ScenePoint | null>(() => {
+    const src = shiftedPlannedTrajectory ?? shiftedTrajectory;
+    if (!src || src.length < 2) return null;
+    return src[src.length - 2] ?? null;
+  }, [shiftedPlannedTrajectory, shiftedTrajectory]);
+
   return (
     <>
       <ambientLight intensity={0.12} />
@@ -252,7 +356,14 @@ function SceneBodies({
       {shiftedPlannedTrajectory && (
         <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.55} />
       )}
-      {isReentry && lastPlannedPoint && <ReentryArc lastPoint={lastPlannedPoint} />}
+      {showReentryArc && lastPlannedPoint && (
+        <ReentryArc
+          prevPoint={prevPlannedPoint}
+          lastPoint={lastPlannedPoint}
+          splashdownPos={SPLASHDOWN_SCENE_POS}
+          origin={origin}
+        />
+      )}
       {data && (
         <React.Suspense fallback={null}>
           <OrionSpacecraft

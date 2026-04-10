@@ -14,6 +14,8 @@ interface TrajectoryLineProps {
   opacity?: number;
   dashed?: boolean;
   lineWidth?: number;
+  dashSize?: number;
+  gapSize?: number;
 }
 
 export function TrajectoryLine({
@@ -22,6 +24,8 @@ export function TrajectoryLine({
   opacity = 0.6,
   dashed = false,
   lineWidth = 2.5,
+  dashSize = 0.5,
+  gapSize = 0.5,
 }: TrajectoryLineProps): React.JSX.Element | null {
   const curvePoints = useMemo(() => {
     if (points.length < 2) return [];
@@ -47,8 +51,8 @@ export function TrajectoryLine({
       depthWrite={false}
       renderOrder={1}
       dashed={dashed}
-      dashSize={0.5}
-      gapSize={0.5}
+      dashSize={dashSize}
+      gapSize={gapSize}
       lineWidth={lineWidth}
     />
   );

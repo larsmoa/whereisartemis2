@@ -47,6 +47,47 @@ export function latLonToSphereLocal(
   ];
 }
 
+/** Earth's axial tilt relative to the J2000 ecliptic plane (radians) */
+const EARTH_OBLIQUITY_RAD = 23.4392911 * (Math.PI / 180);
+
+/**
+ * X-rotation applied to the Earth group in the scene:
+ * π/2 maps the sphere's Y-pole to ecliptic Z, then OBLIQUITY tilts it to match
+ * Earth's J2000 pole direction. Must stay in sync with EarthMesh GROUP_TILT_X.
+ */
+export const EARTH_GROUP_TILT_X = Math.PI / 2 + EARTH_OBLIQUITY_RAD;
+
+/**
+ * Convert geographic coordinates (degrees) and GMST (radians) into scene world
+ * space, applying the same two rotations used by EarthMesh:
+ *   1. Earth Y-rotation (GMST) — sets the Greenwich meridian orientation.
+ *   2. GROUP_TILT_X — tilts the pole to the J2000 ecliptic frame.
+ *
+ * Earth is assumed to be at scene origin [0, 0, 0]. Returns a point on the
+ * sphere of the given radius in the same coordinate space as trajectory points.
+ */
+export function latLonToSceneWorld(
+  latDeg: number,
+  lonDeg: number,
+  radius: number,
+  gmst: number,
+): [number, number, number] {
+  const [lx, ly, lz] = latLonToSphereLocal(latDeg, lonDeg, radius);
+
+  // Apply Earth Y rotation (GMST) — right-hand rule around +Y
+  const rx = lx * Math.cos(gmst) + lz * Math.sin(gmst);
+  const ry = ly;
+  const rz = -lx * Math.sin(gmst) + lz * Math.cos(gmst);
+
+  // Apply GROUP_TILT_X — right-hand rule around +X
+  const tilt = EARTH_GROUP_TILT_X;
+  const wx = rx;
+  const wy = ry * Math.cos(tilt) - rz * Math.sin(tilt);
+  const wz = ry * Math.sin(tilt) + rz * Math.cos(tilt);
+
+  return [wx, wy, wz];
+}
+
 /**
  * Convert an Earth-centred J2000 ecliptic position (km) into scene units.
  *
