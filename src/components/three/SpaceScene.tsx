@@ -433,7 +433,7 @@ function SceneContentsFree({
     if (prevCraftSceneRef.current === null) {
       // First frame: orbit target = Earth, camera at fixed wide-angle position
       ctrl.target.set(ex, ey, ez);
-      cam.position.set(ex + 30.31, ey + 17.5, ez + 20);
+      cam.position.set(ex + 2.93, ey + 19.2, ez + 10.5);
     } else if (prevOriginRef.current !== null) {
       // Floating-origin shift: compensate camera and target so the view stays stable
       const [pox, poy, poz] = prevOriginRef.current;
