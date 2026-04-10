@@ -1,4 +1,4 @@
-import { fetchTrajectory, SPLASHDOWN_TIME } from "@/lib/horizons";
+import { fetchTrajectory, HORIZONS_START_TIME, SPLASHDOWN_TIME } from "@/lib/horizons";
 import { toScenePosition } from "@/lib/sceneCoords";
 import type { TrajectoryDataPoint } from "@/types";
 import { unstable_cache } from "next/cache";
@@ -12,7 +12,7 @@ const getCachedTrajectory = unstable_cache(
     if (type === "future") {
       positions = await fetchTrajectory("-1024", new Date(), SPLASHDOWN_TIME, "10m");
     } else {
-      positions = await fetchTrajectory("-1024", undefined, undefined, "10m");
+      positions = await fetchTrajectory("-1024", HORIZONS_START_TIME, undefined, "10m");
     }
     return positions.map((p) => ({
       position: toScenePosition(p.position),
