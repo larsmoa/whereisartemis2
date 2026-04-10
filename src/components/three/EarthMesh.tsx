@@ -11,8 +11,8 @@ import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
 /** Sidereal rotation rate: 2π rad / 86164.1 s */
 const EARTH_ANGULAR_VELOCITY = (2 * Math.PI) / 86164.1;
 
-/** Cloud layer drifts slightly ahead of the surface (0.2% faster) */
-const CLOUD_ANGULAR_VELOCITY = EARTH_ANGULAR_VELOCITY * 1.002;
+/** Cloud layer rotates 10x faster than the surface */
+const CLOUD_ANGULAR_VELOCITY = EARTH_ANGULAR_VELOCITY * 100;
 
 /** Earth's axial tilt relative to the J2000 ecliptic plane */
 const OBLIQUITY_RAD = 23.4392911 * (Math.PI / 180);
@@ -66,10 +66,18 @@ export function EarthMesh({
   const pendingSyncRef = useRef<number | null>(null);
 
   /**
-   * rotationBaseRef pins the rotation at a known clock time so subsequent frames
-   * can extrapolate exactly without floating-point drift from repeated addition.
+   * rotationBaseRef pins the Earth's rotation at a known clock time so
+   * subsequent frames can extrapolate without floating-point drift.
    */
   const rotationBaseRef = useRef<{ angle: number; clockTime: number } | null>(null);
+
+  /**
+   * cloudBaseRef independently tracks the cloud layer's rotation anchor.
+   * On re-sync it is set to the cloud's *current* computed angle rather than
+   * GMST, so the accumulated extra rotation is preserved across data refreshes
+   * and the cloud layer never snaps back to the Earth's position.
+   */
+  const cloudBaseRef = useRef<{ angle: number; clockTime: number } | null>(null);
 
   // Self-initialise from the wall clock on mount so the Earth is already
   // oriented correctly before the first data fetch completes. This runs
@@ -87,23 +95,34 @@ export function EarthMesh({
   }, [rotationAngle]);
 
   useFrame(({ clock }, delta) => {
-    // Consume a pending GMST sync: anchor the rotation to the current clock time.
+    // Consume a pending GMST sync: re-anchor Earth to the new GMST angle, and
+    // re-anchor the cloud to its *current* computed angle so accumulated extra
+    // rotation is preserved (prevents the cloud from snapping back on re-sync).
     if (pendingSyncRef.current !== null) {
-      rotationBaseRef.current = {
-        angle: pendingSyncRef.current,
-        clockTime: clock.elapsedTime,
-      };
+      const newClockTime = clock.elapsedTime;
+      const newEarthAngle = pendingSyncRef.current;
+
+      const currentCloudAngle =
+        cloudBaseRef.current !== null
+          ? cloudBaseRef.current.angle +
+            (newClockTime - cloudBaseRef.current.clockTime) * CLOUD_ANGULAR_VELOCITY
+          : newEarthAngle;
+
+      rotationBaseRef.current = { angle: newEarthAngle, clockTime: newClockTime };
+      cloudBaseRef.current = { angle: currentCloudAngle, clockTime: newClockTime };
       pendingSyncRef.current = null;
     }
 
     const base = rotationBaseRef.current;
+    const cloudBase = cloudBaseRef.current;
 
-    if (base !== null) {
+    if (base !== null && cloudBase !== null) {
       const elapsed = clock.elapsedTime - base.clockTime;
-      const earthAngle = base.angle + elapsed * EARTH_ANGULAR_VELOCITY;
-      if (earthRef.current) earthRef.current.rotation.y = earthAngle;
+      if (earthRef.current)
+        earthRef.current.rotation.y = base.angle + elapsed * EARTH_ANGULAR_VELOCITY;
+      const cloudElapsed = clock.elapsedTime - cloudBase.clockTime;
       if (cloudsRef.current)
-        cloudsRef.current.rotation.y = base.angle + elapsed * CLOUD_ANGULAR_VELOCITY;
+        cloudsRef.current.rotation.y = cloudBase.angle + cloudElapsed * CLOUD_ANGULAR_VELOCITY;
     } else {
       // No data yet — animate forward at the correct sidereal rate from wherever
       // the mesh currently sits (starts at 0).
