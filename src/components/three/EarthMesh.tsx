@@ -37,7 +37,7 @@ export function EarthMesh({
   });
 
   return (
-    <group position={position}>
+    <group position={position} rotation={[Math.PI / 2, 0, 0]}>
       {/* Earth Sphere */}
       <mesh ref={earthRef}>
         <sphereGeometry args={[EARTH_SCENE_RADIUS, 64, 64]} />
