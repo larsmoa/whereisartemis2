@@ -21,6 +21,33 @@ function mapMagnitude(r: number): number {
 }
 
 /**
+ * Convert geographic coordinates (degrees) to a local 3D position on a
+ * Three.js SphereGeometry of the given radius.
+ *
+ * Three.js SphereGeometry maps lat/lon such that:
+ *   x = R · cos(lon) · cos(lat)
+ *   y = R · sin(lat)            (north pole = +Y in local sphere frame)
+ *   z = −R · sin(lon) · cos(lat)
+ *
+ * The returned position is in the mesh's local frame, so it can be used
+ * directly as the position of a child mesh (e.g. a surface marker) that
+ * must rotate with the Earth.
+ */
+export function latLonToSphereLocal(
+  latDeg: number,
+  lonDeg: number,
+  radius: number,
+): [number, number, number] {
+  const lat = (latDeg * Math.PI) / 180;
+  const lon = (lonDeg * Math.PI) / 180;
+  return [
+    radius * Math.cos(lon) * Math.cos(lat),
+    radius * Math.sin(lat),
+    -radius * Math.sin(lon) * Math.cos(lat),
+  ];
+}
+
+/**
  * Convert an Earth-centred J2000 ecliptic position (km) into scene units.
  *
  * Linear scaling is applied to the vector magnitude so that direction is

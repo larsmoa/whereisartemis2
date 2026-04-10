@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
-import { useTexture } from "@react-three/drei";
+import { Html, useTexture } from "@react-three/drei";
 import { AdditiveBlending } from "three";
 import type { Mesh } from "three";
-import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import { EARTH_SCENE_RADIUS, latLonToSphereLocal } from "@/lib/sceneCoords";
 import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
+import { SPLASHDOWN_LAT_DEG, SPLASHDOWN_LON_DEG } from "@/lib/mission-phase";
 
 /** Sidereal rotation rate: 2π rad / 86164.1 s */
 const EARTH_ANGULAR_VELOCITY = (2 * Math.PI) / 86164.1;
@@ -26,6 +27,58 @@ const OBLIQUITY_RAD = 23.4392911 * (Math.PI / 180);
  */
 const GROUP_TILT_X = Math.PI / 2 + OBLIQUITY_RAD;
 
+/** Marker radius — sits just above the cloud layer */
+const MARKER_RADIUS = EARTH_SCENE_RADIUS + 0.15;
+
+/** Local position of the splashdown site on the sphere surface */
+const SPLASHDOWN_MARKER_POS = latLonToSphereLocal(
+  SPLASHDOWN_LAT_DEG,
+  SPLASHDOWN_LON_DEG,
+  MARKER_RADIUS,
+);
+
+function SplashdownSiteMarker(): React.JSX.Element {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <mesh
+      position={SPLASHDOWN_MARKER_POS}
+      onPointerOver={(e): void => {
+        e.stopPropagation();
+        setHovered(true);
+      }}
+      onPointerOut={(): void => setHovered(false)}
+    >
+      <sphereGeometry args={[0.06, 12, 12]} />
+      <meshStandardMaterial
+        color="#ff6820"
+        emissive="#ff4400"
+        emissiveIntensity={2.5}
+        transparent
+        opacity={0.9}
+      />
+      {hovered && (
+        <Html center>
+          <div
+            style={{
+              background: "rgba(0,0,0,0.72)",
+              color: "#fff",
+              padding: "3px 8px",
+              borderRadius: "4px",
+              fontSize: "12px",
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+              userSelect: "none",
+            }}
+          >
+            Splashdown site
+          </div>
+        </Html>
+      )}
+    </mesh>
+  );
+}
+
 interface EarthMeshProps {
   position?: [number, number, number];
   /** When true, renders a warm amber atmospheric glow (re-entry phase) */
@@ -36,6 +89,8 @@ interface EarthMeshProps {
    * Sun–Earth geometry. Falls back to wall-clock time if not provided.
    */
   rotationAngle?: number | undefined;
+  /** When true, renders a glowing splashdown site marker on the surface */
+  splashdownMarker?: boolean;
 }
 
 /**
@@ -46,6 +101,7 @@ export function EarthMesh({
   position = [0, 0, 0],
   reentryGlow = false,
   rotationAngle,
+  splashdownMarker = false,
 }: EarthMeshProps = {}): React.JSX.Element {
   const earthRef = useRef<Mesh>(null);
   const cloudsRef = useRef<Mesh>(null);
@@ -143,6 +199,8 @@ export function EarthMesh({
           metalness={0.1}
           roughness={0.8}
         />
+        {/* Splashdown site marker — child of earth mesh so it rotates with it */}
+        {splashdownMarker && <SplashdownSiteMarker />}
       </mesh>
 
       {/* Cloud Layer */}

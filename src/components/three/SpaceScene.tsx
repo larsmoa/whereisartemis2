@@ -232,6 +232,7 @@ function SceneBodies({
         position={shiftedEarthPos}
         reentryGlow={isReentry}
         rotationAngle={earthRotationAngle}
+        splashdownMarker
       />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (

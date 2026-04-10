@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { EARTH_SCENE_RADIUS, toScenePosition } from "./sceneCoords";
+import { EARTH_SCENE_RADIUS, toScenePosition, latLonToSphereLocal } from "./sceneCoords";
 
 const EARTH_RADIUS_KM = 6378.137;
 
@@ -61,5 +61,29 @@ describe("toScenePosition", () => {
     const [mx] = toScenePosition({ x: 384000, y: 0, z: 0 });
     const ratio = ax / mx;
     expect(ratio).toBeCloseTo(96000 / 384000, 5);
+  });
+});
+
+describe("latLonToSphereLocal", () => {
+  const R = 5.0;
+
+  it.each([
+    ["equator / Greenwich (0°N, 0°E) faces +X", 0, 0, [R, 0, 0]],
+    ["north pole (90°N, any lon) is at +Y", 90, 0, [0, R, 0]],
+    ["south pole (−90°N, any lon) is at −Y", -90, 0, [0, -R, 0]],
+    ["equator 90°E faces −Z", 0, 90, [0, 0, -R]],
+    ["equator 90°W faces +Z", 0, -90, [0, 0, R]],
+    ["equator 180°E faces −X", 0, 180, [-R, 0, 0]],
+  ] as const)("%s", (_label, lat, lon, expected) => {
+    const [x, y, z] = latLonToSphereLocal(lat, lon, R);
+    expect(x).toBeCloseTo(expected[0], 6);
+    expect(y).toBeCloseTo(expected[1], 6);
+    expect(z).toBeCloseTo(expected[2], 6);
+  });
+
+  it("result magnitude equals the given radius for any lat/lon", () => {
+    const [x, y, z] = latLonToSphereLocal(32.5, -119.5, R);
+    const mag = Math.sqrt(x * x + y * y + z * z);
+    expect(mag).toBeCloseTo(R, 6);
   });
 });
