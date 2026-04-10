@@ -38,6 +38,8 @@ export type SceneView = "top" | "side" | "free";
 export interface ArtemisData {
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
+  /** Sun position relative to Earth in J2000 ecliptic coordinates (km) */
+  sun: HorizonsBody;
   /** Speed magnitude in km/s */
   speedKms: number;
   /** Distance from Earth surface in km */

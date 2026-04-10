@@ -179,14 +179,20 @@ async function fetchBody(command: string, now: Date): Promise<HorizonsBody> {
 export async function fetchArtemisAndMoon(): Promise<{
   spacecraft: HorizonsBody;
   moon: HorizonsBody;
+  sun: HorizonsBody;
 }> {
   // Round to nearest 30 seconds to ensure cache hits (revalidate is 30s)
   const now = new Date();
   now.setSeconds(Math.floor(now.getSeconds() / 30) * 30, 0);
 
-  const [spacecraft, moon] = await Promise.all([fetchBody("-1024", now), fetchBody("301", now)]);
+  const [spacecraft, moon, sun] = await Promise.all([
+    fetchBody("-1024", now),
+    fetchBody("301", now),
+    // Sun (body 10) relative to Earth-center in J2000 ecliptic — used for day/night lighting
+    fetchBody("10", now),
+  ]);
 
-  return { spacecraft, moon };
+  return { spacecraft, moon, sun };
 }
 
 /**

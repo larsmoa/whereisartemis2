@@ -19,6 +19,13 @@ describe("interpolateArtemisData", () => {
       rangeKm: 384400,
       rangeRate: 1,
     },
+    sun: {
+      position: { x: -149597870, y: 0, z: 0 },
+      velocity: { x: 0, y: -29.78, z: 0 },
+      lightTime: 499,
+      rangeKm: 149597870,
+      rangeRate: 0,
+    },
     speedKms: 10,
     distanceFromEarthKm: 10000 - EARTH_RADIUS_KM,
     distanceFromMoonKm: 374400 - MOON_RADIUS_KM,

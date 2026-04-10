@@ -43,9 +43,7 @@ export function OrionSpacecraft({
   const capsuleWidth = capsuleBox.max.x - capsuleBox.min.x;
   const normalizationFactor = 16 / capsuleWidth;
 
-  // Apply the same scaling logic as the old ArtemisMesh
-  const realisticScale = (0.005 / 6378.137) * EARTH_SCENE_RADIUS;
-  const fixedScale = view === "free" ? realisticScale : 0.226 * 2;
+  const fixedScale = view === "free" ? EARTH_SCENE_RADIUS * 0.05 : 0.226 * 2;
   const finalScale = fixedScale * normalizationFactor;
 
   // Clone GLTF materials so we can override envMapIntensity without mutating the shared asset

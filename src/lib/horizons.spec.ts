@@ -373,7 +373,7 @@ describe("fetchArtemisAndMoon", () => {
     vi.useRealTimers();
   });
 
-  it("calls fetch twice (spacecraft + moon) and returns parsed bodies", async () => {
+  it("calls fetch three times (spacecraft + moon + sun) and returns parsed bodies", async () => {
     // Arrange
     const mockFetch = vi.mocked(fetch);
     mockFetch.mockResolvedValue({
@@ -387,9 +387,10 @@ describe("fetchArtemisAndMoon", () => {
     const result = await promise;
 
     // Assert
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    expect(mockFetch).toHaveBeenCalledTimes(3);
     expect(result.spacecraft.rangeKm).toBeCloseTo(7675.49, 1);
     expect(result.moon.rangeKm).toBeCloseTo(7675.49, 1);
+    expect(result.sun.rangeKm).toBeCloseTo(7675.49, 1);
   });
 
   it("passes the spacecraft command '-1024' in the URL", async () => {
@@ -426,6 +427,24 @@ describe("fetchArtemisAndMoon", () => {
     // Assert — second call should contain the Moon body ID
     const secondUrl = mockFetch.mock.calls[1]?.[0] as string;
     expect(secondUrl).toContain("COMMAND=301");
+  });
+
+  it("passes the sun command '10' in the URL", async () => {
+    // Arrange
+    const mockFetch = vi.mocked(fetch);
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(JSON.parse(makeHorizonsResponse(VALID_SOE_RESULT)) as unknown),
+    } as Response);
+
+    // Act
+    const promise = fetchArtemisAndMoon();
+    await vi.runAllTimersAsync();
+    await promise;
+
+    // Assert — third call should contain the Sun body ID
+    const thirdUrl = mockFetch.mock.calls[2]?.[0] as string;
+    expect(thirdUrl).toContain("COMMAND=10");
   });
 
   it("throws when the API returns a non-ok response", async () => {

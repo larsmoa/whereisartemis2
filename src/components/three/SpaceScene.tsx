@@ -132,6 +132,8 @@ interface SceneBodiesProps {
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
+  /** Normalised Sun direction in scene space, scaled to a far-field distance */
+  sunLightPos: [number, number, number];
   origin?: [number, number, number];
   missionPhase?: MissionPhase | undefined;
 }
@@ -160,6 +162,7 @@ function SceneBodies({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
+  sunLightPos,
   origin = [0, 0, 0],
   missionPhase,
 }: SceneBodiesProps): React.JSX.Element {
@@ -216,7 +219,7 @@ function SceneBodies({
   return (
     <>
       <ambientLight intensity={0.12} />
-      <directionalLight position={[100, 50, 80]} intensity={2.2} />
+      <directionalLight position={sunLightPos} intensity={2.2} />
       <React.Suspense fallback={null}>
         <StarmapEnvironment view={view} />
       </React.Suspense>
@@ -224,21 +227,21 @@ function SceneBodies({
       <EarthMesh position={shiftedEarthPos} reentryGlow={isReentry} />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
-        <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.4} />
+        <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.1} />
       )}
       {shiftedPlannedMoonTrajectory && (
         <TrajectoryLine
           points={shiftedPlannedMoonTrajectory}
           color="#aaaaaa"
-          opacity={0.2}
+          opacity={0.25}
           dashed
         />
       )}
       {shiftedTrajectory && (
-        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.6} />
+        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.1} />
       )}
       {shiftedPlannedTrajectory && (
-        <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.3} dashed />
+        <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.55} />
       )}
       {isReentry && lastPlannedPoint && <ReentryArc lastPoint={lastPlannedPoint} />}
       {data && (
@@ -268,6 +271,7 @@ function SceneContentsOrtho({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
+  sunLightPos,
   initialZoom,
   missionPhase,
 }: {
@@ -279,6 +283,7 @@ function SceneContentsOrtho({
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
+  sunLightPos: [number, number, number];
   initialZoom: number;
   missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
@@ -313,6 +318,7 @@ function SceneContentsOrtho({
         plannedMoonTrajectory={plannedMoonTrajectory}
         moonPos={moonPos}
         artemisPos={artemisPos}
+        sunLightPos={sunLightPos}
         missionPhase={missionPhase}
       />
       <OrbitControls
@@ -328,7 +334,7 @@ function SceneContentsOrtho({
 }
 
 /**
- * Perspective orbit around the capsule; target follows live position (camera moves by same delta).
+ * Perspective orbit around Earth; camera opens at a fixed wide-angle position.
  */
 function SceneContentsFree({
   data,
@@ -338,7 +344,8 @@ function SceneContentsFree({
   plannedMoonTrajectory,
   moonPos,
   artemisPos,
-  initialCameraOffset,
+  sunLightPos,
+  initialCameraOffset: _initialCameraOffset,
   missionPhase,
 }: {
   data: ArtemisData | null;
@@ -348,12 +355,14 @@ function SceneContentsFree({
   plannedMoonTrajectory?: ScenePoint[] | null | undefined;
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
+  sunLightPos: [number, number, number];
   initialCameraOffset: [number, number, number];
   missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
   const { camera } = useThree();
   const orbitRef = useRef<OrbitControlsHandle>(null);
   const prevCraftSceneRef = useRef<[number, number, number] | null>(null);
+  const prevOriginRef = useRef<[number, number, number] | null>(null);
 
   // Floating origin state to prevent vertex shader precision loss (jitter)
   const [origin, setOrigin] = React.useState<[number, number, number]>(artemisPos);
@@ -403,33 +412,36 @@ function SceneContentsFree({
 
     const [ax, ay, az] = shiftedArtemisPos;
 
+    // Earth in the floating-origin coordinate frame
+    const ex = -origin[0];
+    const ey = -origin[1];
+    const ez = -origin[2];
+
     if (prevCraftSceneRef.current === null) {
-      ctrl.target.set(ax, ay, az);
-      cam.position.set(
-        ax + initialCameraOffset[0],
-        ay + initialCameraOffset[1],
-        az + initialCameraOffset[2],
-      );
-    } else {
-      const [px, py, pz] = prevCraftSceneRef.current;
-      const dx = ax - px;
-      const dy = ay - py;
-      const dz = az - pz;
-      // Apply the spacecraft movement delta to BOTH camera and target to preserve
-      // the user's pan offset. Setting ctrl.target directly (without moving cam by
-      // the same delta) changes the camera-to-target distance if the user has panned.
-      cam.position.x += dx;
-      cam.position.y += dy;
-      cam.position.z += dz;
-      ctrl.target.x += dx;
-      ctrl.target.y += dy;
-      ctrl.target.z += dz;
+      // First frame: orbit target = Earth, camera at fixed wide-angle position
+      ctrl.target.set(ex, ey, ez);
+      cam.position.set(ex, ey - 35, ez + 20);
+    } else if (prevOriginRef.current !== null) {
+      // Floating-origin shift: compensate camera and target so the view stays stable
+      const [pox, poy, poz] = prevOriginRef.current;
+      const dox = origin[0] - pox;
+      const doy = origin[1] - poy;
+      const doz = origin[2] - poz;
+      if (dox !== 0 || doy !== 0 || doz !== 0) {
+        cam.position.x -= dox;
+        cam.position.y -= doy;
+        cam.position.z -= doz;
+        ctrl.target.x -= dox;
+        ctrl.target.y -= doy;
+        ctrl.target.z -= doz;
+      }
     }
     prevCraftSceneRef.current = [ax, ay, az];
+    prevOriginRef.current = [origin[0], origin[1], origin[2]];
     // Do NOT call ctrl.update() here — OrbitControls calls update() internally on every
     // animation frame. A manual call here double-applies damping, growing the
     // camera-to-target distance on every data poll (zoom-out bug).
-  }, [shiftedArtemisPos, camera, data?.spacecraft.velocity, initialCameraOffset]);
+  }, [shiftedArtemisPos, origin, camera, data?.spacecraft.velocity]);
   /* eslint-enable react-hooks/immutability */
 
   return (
@@ -443,6 +455,7 @@ function SceneContentsFree({
         plannedMoonTrajectory={plannedMoonTrajectory}
         moonPos={moonPos}
         artemisPos={artemisPos}
+        sunLightPos={sunLightPos}
         origin={origin}
         missionPhase={missionPhase}
       />
@@ -488,6 +501,23 @@ export function SpaceScene({
 
   const moonPos = toScenePosition({ x: moonX, y: moonY, z: moonZ });
   const artemisPos = toScenePosition({ x: craftX, y: craftY, z: craftZ });
+
+  // Sun direction in J2000 ecliptic (km). Fallback: Sun is roughly at (-1 AU, 0, 0)
+  // at early April (just past vernal equinox) relative to Earth — good enough when offline.
+  const sunX = data?.sun.position.x ?? -149_597_870;
+  const sunY = data?.sun.position.y ?? 0;
+  const sunZ = data?.sun.position.z ?? 0;
+  const sunMag = Math.sqrt(sunX * sunX + sunY * sunY + sunZ * sunZ);
+  // Place the directional light far beyond the scene (~500 units) in the Sun direction
+  const SUN_LIGHT_DIST = 500;
+  const sunLightPos: [number, number, number] =
+    sunMag > 0
+      ? [
+          (sunX / sunMag) * SUN_LIGHT_DIST,
+          (sunY / sunMag) * SUN_LIGHT_DIST,
+          (sunZ / sunMag) * SUN_LIGHT_DIST,
+        ]
+      : [-SUN_LIGHT_DIST, 0, 0];
 
   // Ensure the past trajectory line terminates exactly at the current capsule position,
   // and the planned trajectory line starts exactly at it.
@@ -538,6 +568,7 @@ export function SpaceScene({
             plannedMoonTrajectory={plannedMoonTrajectory}
             moonPos={moonPos}
             artemisPos={artemisPos}
+            sunLightPos={sunLightPos}
             initialCameraOffset={freeOrbitOffset}
             missionPhase={missionPhase}
           />
@@ -572,6 +603,7 @@ export function SpaceScene({
           plannedMoonTrajectory={plannedMoonTrajectory}
           moonPos={moonPos}
           artemisPos={artemisPos}
+          sunLightPos={sunLightPos}
           initialZoom={orthoZoom}
           missionPhase={missionPhase}
         />

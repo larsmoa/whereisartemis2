@@ -5,7 +5,7 @@ export const revalidate = 30;
 
 export async function GET(): Promise<Response> {
   try {
-    const { spacecraft, moon } = await fetchArtemisAndMoon();
+    const { spacecraft, moon, sun } = await fetchArtemisAndMoon();
 
     const speedKms = Math.sqrt(
       spacecraft.velocity.x ** 2 + spacecraft.velocity.y ** 2 + spacecraft.velocity.z ** 2,
@@ -28,6 +28,7 @@ export async function GET(): Promise<Response> {
     const data: ArtemisData = {
       spacecraft,
       moon,
+      sun,
       speedKms,
       distanceFromEarthKm,
       distanceFromMoonKm,
