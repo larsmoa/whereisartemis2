@@ -89,8 +89,15 @@ export const EARTH_RADIUS_KM = 6378.137;
 /** Moon radius in km */
 export const MOON_RADIUS_KM = 1737.4;
 
-/** Earliest available Artemis II ephemeris in JPL Horizons */
-export const LAUNCH_TIME = new Date("2026-04-02T02:00:00Z");
+/** Actual Artemis II launch time — used as MET=0 reference */
+export const LAUNCH_TIME = new Date("2026-04-01T22:24:00Z");
+
+/**
+ * Earliest available Artemis II ephemeris in JPL Horizons.
+ * The Horizons trajectory only has data from this point, ~3h 36m after actual launch.
+ * Use this as the start time for trajectory fetch calls, not for MET calculations.
+ */
+export const HORIZONS_START_TIME = new Date("2026-04-02T02:00:00Z");
 
 /** Latest available Artemis II ephemeris in JPL Horizons */
 export const SPLASHDOWN_TIME = new Date("2026-04-10T23:55:00Z");

@@ -8,6 +8,7 @@ import {
   EARTH_RADIUS_KM,
   MOON_RADIUS_KM,
   LAUNCH_TIME,
+  HORIZONS_START_TIME,
 } from "./horizons";
 
 // ---------------------------------------------------------------------------
@@ -344,8 +345,12 @@ describe("constants", () => {
     expect(MOON_RADIUS_KM).toBeCloseTo(1737.4, 1);
   });
 
-  it("LAUNCH_TIME is the earliest available Artemis II ephemeris", () => {
-    expect(LAUNCH_TIME.toISOString()).toBe("2026-04-02T02:00:00.000Z");
+  it("LAUNCH_TIME is the actual Artemis II launch time", () => {
+    expect(LAUNCH_TIME.toISOString()).toBe("2026-04-01T22:24:00.000Z");
+  });
+
+  it("HORIZONS_START_TIME is the earliest available Artemis II ephemeris", () => {
+    expect(HORIZONS_START_TIME.toISOString()).toBe("2026-04-02T02:00:00.000Z");
   });
 });
 

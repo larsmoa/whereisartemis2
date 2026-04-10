@@ -1,13 +1,13 @@
 import { LAUNCH_TIME } from "./horizons";
 
 /** Orion module separation — the beginning of the re-entry sequence */
-export const REENTRY_START_TIME = new Date("2026-04-10T23:33:00Z");
+export const REENTRY_START_TIME = new Date("2026-04-10T23:25:00Z");
 
 /** Expected splashdown in the Pacific Ocean */
 export const SPLASHDOWN_ACTUAL_TIME = new Date("2026-04-11T00:07:00Z");
 
 /** Post-splashdown news conference */
-export const POST_SPLASHDOWN_CONF_TIME = new Date("2026-04-11T02:30:00Z");
+export const POST_SPLASHDOWN_CONF_TIME = new Date("2026-04-11T02:35:00Z");
 
 /**
  * Approximate splashdown coordinates (Pacific Ocean, off Baja California).
