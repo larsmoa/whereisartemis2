@@ -43,7 +43,7 @@ export function OrionSpacecraft({
   const capsuleWidth = capsuleBox.max.x - capsuleBox.min.x;
   const normalizationFactor = 16 / capsuleWidth;
 
-  const fixedScale = view === "free" ? EARTH_SCENE_RADIUS * 0.05 : 0.226 * 2;
+  const fixedScale = view === "free" ? EARTH_SCENE_RADIUS * 0.0125 : 0.226 * 0.5;
   const finalScale = fixedScale * normalizationFactor;
 
   // Clone GLTF materials so we can override envMapIntensity without mutating the shared asset
