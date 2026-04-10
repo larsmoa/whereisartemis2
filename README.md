@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Where Is Artemis?
+
+Real-time 3D tracking of NASA's Artemis II mission — spacecraft position, trajectory, and mission telemetry rendered in the browser with React Three Fiber.
+
+![Screenshot of the Artemis II tracker showing the spacecraft's trajectory around Earth with live telemetry](public/screenshot.png)
+
+## Features
+
+- **Live telemetry** — distance from Earth and Moon, current speed, signal delay, and mission elapsed time
+- **3D visualization** — interactive globe with the spacecraft's past and future trajectory rendered in real time
+- **Mission events** — upcoming mission milestones with a countdown timer
+- **Mission stream** — embedded NASA YouTube live stream
+
+## Tech Stack
+
+| Layer         | Technology                                                                      |
+| ------------- | ------------------------------------------------------------------------------- |
+| Framework     | [Next.js 16](https://nextjs.org) (App Router)                                   |
+| 3D rendering  | [React Three Fiber](https://r3f.docs.pmnd.rs) + [Three.js](https://threejs.org) |
+| 3D helpers    | [@react-three/drei](https://github.com/pmndrs/drei)                             |
+| Data fetching | [TanStack Query](https://tanstack.com/query)                                    |
+| Styling       | [Tailwind CSS v4](https://tailwindcss.com)                                      |
+| Language      | TypeScript (strict)                                                             |
+| Testing       | [Vitest](https://vitest.dev) + [Testing Library](https://testing-library.com)   |
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command              | Description                          |
+| -------------------- | ------------------------------------ |
+| `pnpm dev`           | Start the development server         |
+| `pnpm build`         | Build for production                 |
+| `pnpm lint`          | Run ESLint (zero warnings tolerated) |
+| `pnpm type-check`    | Run TypeScript type checking         |
+| `pnpm test`          | Run the test suite                   |
+| `pnpm test:coverage` | Run tests with coverage report       |
 
-## Learn More
+## Project Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── app/              # Next.js App Router — routes and layouts
+├── components/
+│   ├── ui/           # Primitive UI components
+│   └── three/        # React Three Fiber canvas components
+├── hooks/            # Custom React hooks
+├── lib/              # Utilities and data fetching helpers
+└── types/            # Shared TypeScript types
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+[MIT](LICENSE)
