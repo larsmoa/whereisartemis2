@@ -16,6 +16,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition, EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
 import type { MissionPhase } from "@/lib/mission-phase";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
 
@@ -134,6 +135,8 @@ interface SceneBodiesProps {
   artemisPos: [number, number, number];
   /** Normalised Sun direction in scene space, scaled to a far-field distance */
   sunLightPos: [number, number, number];
+  /** GMST in radians — sets the real-world rotational orientation of the Earth */
+  earthRotationAngle: number | undefined;
   origin?: [number, number, number];
   missionPhase?: MissionPhase | undefined;
 }
@@ -163,6 +166,7 @@ function SceneBodies({
   moonPos,
   artemisPos,
   sunLightPos,
+  earthRotationAngle,
   origin = [0, 0, 0],
   missionPhase,
 }: SceneBodiesProps): React.JSX.Element {
@@ -224,7 +228,11 @@ function SceneBodies({
         <StarmapEnvironment view={view} />
       </React.Suspense>
       {view !== "free" && <PointStars perspective={false} />}
-      <EarthMesh position={shiftedEarthPos} reentryGlow={isReentry} />
+      <EarthMesh
+        position={shiftedEarthPos}
+        reentryGlow={isReentry}
+        rotationAngle={earthRotationAngle}
+      />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
         <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.1} />
@@ -238,7 +246,7 @@ function SceneBodies({
         />
       )}
       {shiftedTrajectory && (
-        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.1} />
+        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.4} />
       )}
       {shiftedPlannedTrajectory && (
         <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.55} />
@@ -272,6 +280,7 @@ function SceneContentsOrtho({
   moonPos,
   artemisPos,
   sunLightPos,
+  earthRotationAngle,
   initialZoom,
   missionPhase,
 }: {
@@ -284,6 +293,7 @@ function SceneContentsOrtho({
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   sunLightPos: [number, number, number];
+  earthRotationAngle: number | undefined;
   initialZoom: number;
   missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
@@ -319,6 +329,7 @@ function SceneContentsOrtho({
         moonPos={moonPos}
         artemisPos={artemisPos}
         sunLightPos={sunLightPos}
+        earthRotationAngle={earthRotationAngle}
         missionPhase={missionPhase}
       />
       <OrbitControls
@@ -345,6 +356,7 @@ function SceneContentsFree({
   moonPos,
   artemisPos,
   sunLightPos,
+  earthRotationAngle,
   initialCameraOffset: _initialCameraOffset,
   missionPhase,
 }: {
@@ -356,6 +368,7 @@ function SceneContentsFree({
   moonPos: [number, number, number];
   artemisPos: [number, number, number];
   sunLightPos: [number, number, number];
+  earthRotationAngle: number | undefined;
   initialCameraOffset: [number, number, number];
   missionPhase?: MissionPhase | undefined;
 }): React.JSX.Element {
@@ -456,6 +469,7 @@ function SceneContentsFree({
         moonPos={moonPos}
         artemisPos={artemisPos}
         sunLightPos={sunLightPos}
+        earthRotationAngle={earthRotationAngle}
         origin={origin}
         missionPhase={missionPhase}
       />
@@ -541,6 +555,14 @@ export function SpaceScene({
 
   const canvasClassName = className ? `${className} touch-none` : "touch-none";
 
+  // Use the data timestamp so the Earth's orientation matches the real Sun–Earth
+  // geometry for that moment. When data is absent, EarthMesh self-initialises
+  // from the current wall-clock time in a mount-time effect.
+  const earthRotationAngle = React.useMemo(
+    () => (data ? greenwichMeanSiderealTime(new Date(data.timestamp)) : undefined),
+    [data],
+  );
+
   if (view === "free") {
     const freeOrbitOffset = computeFreeOrbitInitialOffset(artemisPos, moonPos);
     return (
@@ -556,7 +578,7 @@ export function SpaceScene({
               artemisPos[2] + freeOrbitOffset[2],
             ],
             up: [0, 0, 1],
-            near: 0.0000001,
+            near: 0.1,
             far: 4000,
           }}
         >
@@ -569,6 +591,7 @@ export function SpaceScene({
             moonPos={moonPos}
             artemisPos={artemisPos}
             sunLightPos={sunLightPos}
+            earthRotationAngle={earthRotationAngle}
             initialCameraOffset={freeOrbitOffset}
             missionPhase={missionPhase}
           />
@@ -604,6 +627,7 @@ export function SpaceScene({
           moonPos={moonPos}
           artemisPos={artemisPos}
           sunLightPos={sunLightPos}
+          earthRotationAngle={earthRotationAngle}
           initialZoom={orthoZoom}
           missionPhase={missionPhase}
         />

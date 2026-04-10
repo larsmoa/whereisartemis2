@@ -1,16 +1,41 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import { AdditiveBlending } from "three";
 import type { Mesh } from "three";
 import { EARTH_SCENE_RADIUS } from "@/lib/sceneCoords";
+import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
+
+/** Sidereal rotation rate: 2π rad / 86164.1 s */
+const EARTH_ANGULAR_VELOCITY = (2 * Math.PI) / 86164.1;
+
+/** Cloud layer drifts slightly ahead of the surface (0.2% faster) */
+const CLOUD_ANGULAR_VELOCITY = EARTH_ANGULAR_VELOCITY * 1.002;
+
+/** Earth's axial tilt relative to the J2000 ecliptic plane */
+const OBLIQUITY_RAD = 23.4392911 * (Math.PI / 180);
+
+/**
+ * Group X-rotation that correctly orients the Earth sphere:
+ *   - π/2 maps the sphere's Y-pole to the ecliptic Z axis (ecliptic north).
+ *   - Adding OBLIQUITY_RAD tilts the pole a further 23.44° toward ecliptic
+ *     longitude 270° (−Y direction), matching Earth's J2000 pole at
+ *     (0, −sin ε, cos ε) in scene space.
+ */
+const GROUP_TILT_X = Math.PI / 2 + OBLIQUITY_RAD;
 
 interface EarthMeshProps {
   position?: [number, number, number];
   /** When true, renders a warm amber atmospheric glow (re-entry phase) */
   reentryGlow?: boolean;
+  /**
+   * Greenwich Mean Sidereal Time in radians at the current data timestamp.
+   * Sets the initial rotation so the Greenwich meridian aligns with the real
+   * Sun–Earth geometry. Falls back to wall-clock time if not provided.
+   */
+  rotationAngle?: number | undefined;
 }
 
 /**
@@ -20,6 +45,7 @@ interface EarthMeshProps {
 export function EarthMesh({
   position = [0, 0, 0],
   reentryGlow = false,
+  rotationAngle,
 }: EarthMeshProps = {}): React.JSX.Element {
   const earthRef = useRef<Mesh>(null);
   const cloudsRef = useRef<Mesh>(null);
@@ -31,13 +57,63 @@ export function EarthMesh({
     "/textures/earth/earth_clouds_1024.png",
   ]);
 
-  useFrame((_, delta) => {
-    if (earthRef.current) earthRef.current.rotation.y += delta * 0.05;
-    if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.07;
+  /**
+   * pendingSyncRef holds the GMST value that should be applied at the start of
+   * the next animation frame. It is written by a React effect (which fires after
+   * render but outside the R3F loop) and consumed inside useFrame where we have
+   * access to clock.elapsedTime. This avoids the need for clock in useEffect.
+   */
+  const pendingSyncRef = useRef<number | null>(null);
+
+  /**
+   * rotationBaseRef pins the rotation at a known clock time so subsequent frames
+   * can extrapolate exactly without floating-point drift from repeated addition.
+   */
+  const rotationBaseRef = useRef<{ angle: number; clockTime: number } | null>(null);
+
+  // Self-initialise from the wall clock on mount so the Earth is already
+  // oriented correctly before the first data fetch completes. This runs
+  // in a useEffect (after render) so it is safe from the purity rule.
+  useEffect(() => {
+    if (pendingSyncRef.current === null && rotationBaseRef.current === null) {
+      pendingSyncRef.current = greenwichMeanSiderealTime(new Date());
+    }
+  }, []);
+
+  useEffect(() => {
+    if (rotationAngle !== undefined) {
+      pendingSyncRef.current = rotationAngle;
+    }
+  }, [rotationAngle]);
+
+  useFrame(({ clock }, delta) => {
+    // Consume a pending GMST sync: anchor the rotation to the current clock time.
+    if (pendingSyncRef.current !== null) {
+      rotationBaseRef.current = {
+        angle: pendingSyncRef.current,
+        clockTime: clock.elapsedTime,
+      };
+      pendingSyncRef.current = null;
+    }
+
+    const base = rotationBaseRef.current;
+
+    if (base !== null) {
+      const elapsed = clock.elapsedTime - base.clockTime;
+      const earthAngle = base.angle + elapsed * EARTH_ANGULAR_VELOCITY;
+      if (earthRef.current) earthRef.current.rotation.y = earthAngle;
+      if (cloudsRef.current)
+        cloudsRef.current.rotation.y = base.angle + elapsed * CLOUD_ANGULAR_VELOCITY;
+    } else {
+      // No data yet — animate forward at the correct sidereal rate from wherever
+      // the mesh currently sits (starts at 0).
+      if (earthRef.current) earthRef.current.rotation.y += delta * EARTH_ANGULAR_VELOCITY;
+      if (cloudsRef.current) cloudsRef.current.rotation.y += delta * CLOUD_ANGULAR_VELOCITY;
+    }
   });
 
   return (
-    <group position={position} rotation={[Math.PI / 2, 0, 0]}>
+    <group position={position} rotation={[GROUP_TILT_X, 0, 0]}>
       {/* Earth Sphere */}
       <mesh ref={earthRef}>
         <sphereGeometry args={[EARTH_SCENE_RADIUS, 64, 64]} />
