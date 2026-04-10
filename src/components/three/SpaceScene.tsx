@@ -246,7 +246,7 @@ function SceneBodies({
         />
       )}
       {shiftedTrajectory && (
-        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.4} />
+        <TrajectoryLine points={shiftedTrajectory} color="#4488ff" opacity={0.1} />
       )}
       {shiftedPlannedTrajectory && (
         <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.55} />
