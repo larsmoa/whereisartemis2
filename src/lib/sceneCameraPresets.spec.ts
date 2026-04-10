@@ -59,11 +59,11 @@ describe("computeFreeOrbitInitialOffset", () => {
     expect(result.every((v) => isFinite(v))).toBe(true);
   });
 
-  it("places camera behind capsule relative to the moon direction", () => {
-    // Arrange — moon is at +X, so camera should be pushed in -X direction
+  it("places camera on the moon side of the capsule", () => {
+    // Arrange — moon is at +X, so camera should be pushed in +X direction
     const result = computeFreeOrbitInitialOffset([0, 0, 0], [10, 0, 0]);
 
-    // Assert — back component along -moonDir (i.e. -X) should be negative
-    expect(result[0]).toBeLessThan(0);
+    // Assert — back component along +moonDir (i.e. +X) should be positive
+    expect(result[0]).toBeGreaterThan(0);
   });
 });

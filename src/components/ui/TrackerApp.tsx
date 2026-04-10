@@ -236,7 +236,7 @@ export function TrackerApp(): React.JSX.Element {
   }, []);
 
   const lastUpdated = mounted && dataUpdatedAt ? new Date(dataUpdatedAt) : null;
-  const [sceneView, setSceneView] = useState<SceneView>("top");
+  const [sceneView, setSceneView] = useState<SceneView>("free");
 
   const isProminentPhase =
     mounted &&

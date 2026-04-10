@@ -32,14 +32,15 @@ export function getOrthographicEyeForView(view: OrthographicMapView): Orthograph
 export const FREE_ORBIT_INITIAL_OFFSET: [number, number, number] = [0.00008, 0.00008, 0.00008];
 
 /**
- * Compute the initial camera offset for free orbit mode so the moon appears
- * to the side of the capsule from the camera's perspective.
+ * Compute the initial camera offset for free orbit mode so Earth appears
+ * prominently in front of the capsule from the camera's perspective.
  *
- * Places the camera on the opposite side of the capsule from the moon (Earth
- * side) with a lateral offset in the ecliptic plane.  Using the ecliptic-plane
- * "right" direction (cross(eclipticNorth, moonDir)) keeps the camera at the
- * same ecliptic latitude as the capsule, so the moon appears to the side rather
- * than above/below — giving clear visual separation between the two objects.
+ * Places the camera on the moon side of the capsule (between capsule and moon)
+ * with a lateral offset in the ecliptic plane. The camera looks at the capsule
+ * via OrbitControls, with Earth visible as the large body beyond it. Using the
+ * ecliptic-plane "right" direction (cross(eclipticNorth, moonDir)) keeps the
+ * camera at the same ecliptic latitude as the capsule, giving clear visual
+ * separation between the capsule and Earth.
  *
  * Falls back to FREE_ORBIT_INITIAL_OFFSET when moon and capsule are coincident.
  */
@@ -78,11 +79,11 @@ export function computeFreeOrbitInitialOffset(
     rz /= rLen;
   }
 
-  // Offset camera backward from moon and laterally to one side so the moon
-  // appears clearly to the side of the capsule rather than overlapping it.
+  // Offset camera toward the moon and laterally to one side so Earth appears
+  // prominently beyond the capsule when looking at it from the moon side.
   return [
-    -mdx * BACK_DISTANCE - rx * LATERAL_BIAS,
-    -mdy * BACK_DISTANCE - ry * LATERAL_BIAS,
-    -mdz * BACK_DISTANCE - rz * LATERAL_BIAS,
+    mdx * BACK_DISTANCE - rx * LATERAL_BIAS,
+    mdy * BACK_DISTANCE - ry * LATERAL_BIAS,
+    mdz * BACK_DISTANCE - rz * LATERAL_BIAS,
   ];
 }
