@@ -37,6 +37,14 @@ import {
 import type { UnitSystem } from "@/lib/format";
 import { getMissionPhase, type MissionPhase } from "@/lib/mission-phase";
 
+const VALID_PHASES = new Set<MissionPhase>([
+  "OUTBOUND",
+  "RETURN",
+  "REENTRY",
+  "SPLASHDOWN_MOMENT",
+  "COMPLETE",
+]);
+
 const SpaceScene = dynamic(
   () => import("@/components/three/SpaceScene").then((m) => m.SpaceScene),
   { ssr: false },
@@ -203,7 +211,7 @@ function PageFooter(): React.JSX.Element {
   );
 }
 
-export function TrackerApp(): React.JSX.Element {
+function TrackerAppInner(): React.JSX.Element {
   const { data: rawData, isPending, error, dataUpdatedAt } = useArtemisData();
   const data = useInterpolatedArtemisData(rawData);
   const { data: trajectoryData } = useArtemisTrajectory("past");
@@ -213,7 +221,12 @@ export function TrackerApp(): React.JSX.Element {
   const { unitSystem, setUnitSystem } = useUnitSystem();
   const showSplashdownCountdown = useShowSplashdownCountdown();
   const [mounted, setMounted] = useState(false);
-  const [missionPhase, setMissionPhase] = useState<MissionPhase>(() => getMissionPhase(new Date()));
+  const [liveMissionPhase, setLiveMissionPhase] = useState<MissionPhase>(() =>
+    getMissionPhase(new Date()),
+  );
+  const [emulateOverride, setEmulateOverride] = useState<MissionPhase | null>(null);
+
+  const missionPhase = emulateOverride ?? liveMissionPhase;
 
   const trajectory = useMemo(
     () => trajectoryData?.map((p) => p.position) ?? null,
@@ -227,22 +240,20 @@ export function TrackerApp(): React.JSX.Element {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
+    const raw = new URLSearchParams(window.location.search).get("emulate");
+    if (raw && VALID_PHASES.has(raw as MissionPhase)) {
+      setEmulateOverride(raw as MissionPhase);
+    }
   }, []);
 
   useEffect(() => {
-    const tick = (): void => setMissionPhase(getMissionPhase(new Date()));
+    const tick = (): void => setLiveMissionPhase(getMissionPhase(new Date()));
     const id = setInterval(tick, 10_000);
     return () => clearInterval(id);
   }, []);
 
   const lastUpdated = mounted && dataUpdatedAt ? new Date(dataUpdatedAt) : null;
   const [sceneView, setSceneView] = useState<SceneView>("free");
-
-  const isProminentPhase =
-    mounted &&
-    (missionPhase === "REENTRY" ||
-      missionPhase === "SPLASHDOWN_MOMENT" ||
-      missionPhase === "COMPLETE");
 
   const isMissionComplete = mounted && missionPhase === "COMPLETE";
 
@@ -270,6 +281,11 @@ export function TrackerApp(): React.JSX.Element {
 
   return (
     <>
+      {emulateOverride && (
+        <div className="fixed bottom-4 right-4 z-50 rounded border border-amber-400 bg-amber-500/30 px-3 py-1.5 font-mono text-xs font-bold text-amber-300 shadow-lg">
+          ⚠ emulate: {emulateOverride}
+        </div>
+      )}
       {/* Mobile: scrollable layout with a fixed-height 3D scene */}
       <div className="flex min-h-svh flex-col bg-black text-white sm:hidden">
         <PageHeader lastUpdated={lastUpdated} />
@@ -299,32 +315,21 @@ export function TrackerApp(): React.JSX.Element {
         {/* Top tracker section: fixed to viewport height */}
         <div className="grid" style={{ gridTemplateRows: "auto 1fr auto", height: "100dvh" }}>
           <PageHeader lastUpdated={lastUpdated} />
-          {/* Scene row: resizable split normally; full-width YouTube during critical phases */}
+          {/* Scene row: resizable split */}
           <div className="flex min-h-0 relative">
-            {isProminentPhase ? (
-              <div className="flex h-full w-full flex-col">
-                <div className="h-[35%] shrink-0 border-b border-white/10">
+            <Group orientation="horizontal">
+              <Panel defaultSize={67} minSize={20}>
+                <div className="h-full w-full">
                   <ScenePanel {...scenePanelProps} isMobile={false} />
                 </div>
-                <div className="min-h-0 flex-1">
-                  <YouTubeEmbed className="h-full" borderless />
+              </Panel>
+              <Separator className="w-1 cursor-col-resize bg-white/10 hover:bg-white/30 active:bg-white/50 transition-colors z-30" />
+              <Panel defaultSize={33} minSize={20}>
+                <div className="h-full w-full relative">
+                  <YouTubeEmbed className="h-full" />
                 </div>
-              </div>
-            ) : (
-              <Group orientation="horizontal">
-                <Panel defaultSize={67} minSize={20}>
-                  <div className="h-full w-full">
-                    <ScenePanel {...scenePanelProps} isMobile={false} />
-                  </div>
-                </Panel>
-                <Separator className="w-1 cursor-col-resize bg-white/10 hover:bg-white/30 active:bg-white/50 transition-colors z-30" />
-                <Panel defaultSize={33} minSize={20}>
-                  <div className="h-full w-full relative">
-                    <YouTubeEmbed className="h-full" />
-                  </div>
-                </Panel>
-              </Group>
-            )}
+              </Panel>
+            </Group>
           </div>
           {isMissionComplete ? (
             <MissionSummary unitSystem={unitSystem} />
@@ -342,3 +347,5 @@ export function TrackerApp(): React.JSX.Element {
     </>
   );
 }
+
+export { TrackerAppInner as TrackerApp };

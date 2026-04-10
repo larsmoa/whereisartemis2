@@ -21,6 +21,7 @@ import {
   SPLASHDOWN_LAT_DEG,
   SPLASHDOWN_LON_DEG,
   SPLASHDOWN_ACTUAL_TIME,
+  isServiceModuleSeparated,
 } from "@/lib/mission-phase";
 import type { MissionPhase } from "@/lib/mission-phase";
 import type { ArtemisData, ScenePoint, SceneView } from "@/types";
@@ -39,6 +40,72 @@ const SPLASHDOWN_SCENE_POS: [number, number, number] = latLonToSceneWorld(
   EARTH_SCENE_RADIUS,
   SPLASHDOWN_GMST,
 );
+
+/** Last time JPL Horizons has ephemeris data for Orion (-1024) */
+const HORIZONS_END_TIME = new Date("2026-04-10T23:54:00Z");
+
+/**
+ * Evaluate the Hermite cubic arc used by ReentryArc at parameter t ∈ [0, 1].
+ * Kept in sync with the ReentryArc implementation so the spacecraft marker
+ * follows exactly the same curve that is drawn on screen.
+ */
+function evaluateReentryHermite(
+  prevPoint: ScenePoint | null,
+  lastPoint: ScenePoint,
+  splashdownPos: [number, number, number],
+  t: number,
+): [number, number, number] {
+  const [lx, ly, lz] = lastPoint;
+  const [spx, spy, spz] = splashdownPos;
+
+  const cx = spx - lx,
+    cy = spy - ly,
+    cz = spz - lz;
+  const chord = Math.sqrt(cx * cx + cy * cy + cz * cz);
+  if (chord === 0) return [lx, ly, lz];
+
+  let t0x: number, t0y: number, t0z: number;
+  if (prevPoint) {
+    const [pvx, pvy, pvz] = prevPoint;
+    const dvx = lx - pvx,
+      dvy = ly - pvy,
+      dvz = lz - pvz;
+    const dvLen = Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz);
+    if (dvLen > 0) {
+      t0x = (dvx / dvLen) * chord * 2;
+      t0y = (dvy / dvLen) * chord * 2;
+      t0z = (dvz / dvLen) * chord * 2;
+    } else {
+      const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
+      t0x = (-lx / len) * chord * 2;
+      t0y = (-ly / len) * chord * 2;
+      t0z = (-lz / len) * chord * 2;
+    }
+  } else {
+    const len = Math.sqrt(lx * lx + ly * ly + lz * lz);
+    t0x = (-lx / len) * chord * 2;
+    t0y = (-ly / len) * chord * 2;
+    t0z = (-lz / len) * chord * 2;
+  }
+
+  const spLen = Math.sqrt(spx * spx + spy * spy + spz * spz);
+  const t1x = (-spx / spLen) * chord * 0.6;
+  const t1y = (-spy / spLen) * chord * 0.6;
+  const t1z = (-spz / spLen) * chord * 0.6;
+
+  const t2 = t * t,
+    t3 = t2 * t;
+  const h00 = 2 * t3 - 3 * t2 + 1;
+  const h10 = t3 - 2 * t2 + t;
+  const h01 = -2 * t3 + 3 * t2;
+  const h11 = t3 - t2;
+
+  return [
+    h00 * lx + h10 * t0x + h01 * spx + h11 * t1x,
+    h00 * ly + h10 * t0y + h01 * spy + h11 * t1y,
+    h00 * lz + h10 * t0z + h01 * spz + h11 * t1z,
+  ];
+}
 
 const ORTHO_ZOOM_MOBILE = 1.15;
 const ORTHO_ZOOM_DESKTOP = ORTHO_ZOOM_MOBILE * 2.7;
@@ -266,6 +333,8 @@ function SceneBodies({
     missionPhase === "SPLASHDOWN_MOMENT" ||
     missionPhase === "COMPLETE";
 
+  const smSeparated = isServiceModuleSeparated(missionPhase ?? "OUTBOUND");
+
   // Show the re-entry arc as a landing preview during the return leg and all later phases
   const showReentryArc =
     missionPhase === "RETURN" ||
@@ -332,12 +401,7 @@ function SceneBodies({
         <StarmapEnvironment view={view} />
       </React.Suspense>
       {view !== "free" && <PointStars perspective={false} />}
-      <EarthMesh
-        position={shiftedEarthPos}
-        reentryGlow={isReentry}
-        rotationAngle={earthRotationAngle}
-        splashdownMarker
-      />
+      <EarthMesh position={shiftedEarthPos} rotationAngle={earthRotationAngle} splashdownMarker />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
         <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.1} />
@@ -370,6 +434,8 @@ function SceneBodies({
             position={shiftedArtemisPos}
             velocity={data.spacecraft.velocity}
             view={view}
+            showServiceModule={!smSeparated}
+            reentryGlow={isReentry}
           />
         </React.Suspense>
       )}
@@ -628,6 +694,47 @@ export function SpaceScene({
   const moonPos = toScenePosition({ x: moonX, y: moonY, z: moonZ });
   const artemisPos = toScenePosition({ x: craftX, y: craftY, z: craftZ });
 
+  // Tick at every animation frame during REENTRY so the synthetic position
+  // interpolates smoothly along the arc without waiting for a data refresh.
+  const [nowMs, setNowMs] = React.useState<number>(() => Date.now());
+  React.useEffect(() => {
+    if (missionPhase !== "REENTRY") return;
+    let rafId: number;
+    const tick = (): void => {
+      setNowMs(Date.now());
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [missionPhase]);
+
+  // After Horizons data ends (~23:54 UTC), interpolate the spacecraft marker
+  // along the same Hermite arc drawn on screen. At SPLASHDOWN_MOMENT / COMPLETE
+  // snap it to the splashdown site so it doesn't stay frozen at entry interface.
+  const effectiveArtemisPos = React.useMemo<[number, number, number]>(() => {
+    if (missionPhase === "SPLASHDOWN_MOMENT" || missionPhase === "COMPLETE") {
+      return SPLASHDOWN_SCENE_POS;
+    }
+    if (missionPhase !== "REENTRY") return artemisPos;
+    if (nowMs <= HORIZONS_END_TIME.getTime()) return artemisPos;
+
+    const t = Math.max(
+      0,
+      Math.min(
+        1,
+        (nowMs - HORIZONS_END_TIME.getTime()) /
+          (SPLASHDOWN_ACTUAL_TIME.getTime() - HORIZONS_END_TIME.getTime()),
+      ),
+    );
+
+    const src = plannedTrajectory ?? trajectory;
+    if (!src || src.length === 0) return artemisPos;
+    const lastPt = src[src.length - 1] ?? artemisPos;
+    const prevPt = src.length >= 2 ? (src[src.length - 2] ?? null) : null;
+
+    return evaluateReentryHermite(prevPt, lastPt, SPLASHDOWN_SCENE_POS, t);
+  }, [missionPhase, nowMs, artemisPos, plannedTrajectory, trajectory]);
+
   // Sun direction in J2000 ecliptic (km). Fallback: Sun is roughly at (-1 AU, 0, 0)
   // at early April (just past vernal equinox) relative to Earth — good enough when offline.
   const sunX = data?.sun.position.x ?? -149_597_870;
@@ -676,7 +783,7 @@ export function SpaceScene({
   );
 
   if (view === "free") {
-    const freeOrbitOffset = computeFreeOrbitInitialOffset(artemisPos, moonPos);
+    const freeOrbitOffset = computeFreeOrbitInitialOffset(effectiveArtemisPos, moonPos);
     return (
       <ErrorBoundary>
         <Canvas
@@ -685,9 +792,9 @@ export function SpaceScene({
           camera={{
             fov: 52,
             position: [
-              artemisPos[0] + freeOrbitOffset[0],
-              artemisPos[1] + freeOrbitOffset[1],
-              artemisPos[2] + freeOrbitOffset[2],
+              effectiveArtemisPos[0] + freeOrbitOffset[0],
+              effectiveArtemisPos[1] + freeOrbitOffset[1],
+              effectiveArtemisPos[2] + freeOrbitOffset[2],
             ],
             up: [0, 0, 1],
             near: 0.1,
@@ -701,7 +808,7 @@ export function SpaceScene({
             plannedTrajectory={plannedTrajectoryWithCurrent}
             plannedMoonTrajectory={plannedMoonTrajectory}
             moonPos={moonPos}
-            artemisPos={artemisPos}
+            artemisPos={effectiveArtemisPos}
             sunLightPos={sunLightPos}
             earthRotationAngle={earthRotationAngle}
             initialCameraOffset={freeOrbitOffset}
@@ -737,7 +844,7 @@ export function SpaceScene({
           plannedTrajectory={plannedTrajectoryWithCurrent}
           plannedMoonTrajectory={plannedMoonTrajectory}
           moonPos={moonPos}
-          artemisPos={artemisPos}
+          artemisPos={effectiveArtemisPos}
           sunLightPos={sunLightPos}
           earthRotationAngle={earthRotationAngle}
           initialZoom={orthoZoom}

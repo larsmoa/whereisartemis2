@@ -3,6 +3,9 @@ import { LAUNCH_TIME } from "./horizons";
 /** Orion module separation — the beginning of the re-entry sequence */
 export const REENTRY_START_TIME = new Date("2026-04-10T23:25:00Z");
 
+/** European Service Module separates from the crew module */
+export const ESM_SEPARATION_TIME = new Date("2026-04-10T23:33:00Z");
+
 /** Expected splashdown in the Pacific Ocean */
 export const SPLASHDOWN_ACTUAL_TIME = new Date("2026-04-11T00:07:00Z");
 
@@ -26,6 +29,11 @@ export const COUNTDOWN_WINDOW_MS = 30 * 60 * 1_000;
 const RETURN_LEG_START = new Date("2026-04-06T23:02:00Z");
 
 export type MissionPhase = "OUTBOUND" | "RETURN" | "REENTRY" | "SPLASHDOWN_MOMENT" | "COMPLETE";
+
+/** True from ESM separation onwards — use to hide the service module mesh */
+export function isServiceModuleSeparated(phase: MissionPhase): boolean {
+  return phase === "REENTRY" || phase === "SPLASHDOWN_MOMENT" || phase === "COMPLETE";
+}
 
 export function getMissionPhase(now: Date): MissionPhase {
   const nowMs = now.getTime();
