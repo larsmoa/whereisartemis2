@@ -17,135 +17,120 @@
   },
   {
     "id": "tanking-operations",
-    "timestamp": "2026-04-01T11:45:00Z",
+    "timestamp": "2026-04-01T12:40:00Z",
     "name": "Tanking Operations Begin",
-    "description": "Coverage of tanking operations to load propellant into the SLS rocket begins, including views of the rocket.",
+    "description": "Loading of liquid hydrogen into the SLS core stage begins with a slow fill to chill down the tank and feed lines.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20190711-PH_KLS01_0151/KSC-20190711-PH_KLS01_0151~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   },
   {
     "id": "launch",
-    "timestamp": "2026-04-01T22:24:00Z",
-    "name": "Artemis II Launch",
-    "description": "Targeted launch of the Artemis II mission from Launch Complex 39B at Kennedy Space Center.",
+    "timestamp": "2026-04-01T22:35:12Z",
+    "name": "Artemis II Liftoff",
+    "description": "SLS lifts off from LC-39B at Kennedy Space Center. Nearly 40 MN of thrust pushes the crew toward orbit at ~8 km/s.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20190711-PH_KLS01_0151/KSC-20190711-PH_KLS01_0151~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   },
   {
-    "id": "translunar-injection",
+    "id": "tli",
     "timestamp": "2026-04-02T23:49:00Z",
-    "name": "Translunar Injection Burn",
-    "description": "Planned translunar injection burn for five minutes and 49 seconds to send the crew in Orion toward the Moon.",
+    "name": "Trans-Lunar Injection (TLI) Burn",
+    "description": "THE critical burn — ESM main engine fires for ~6 min 5 s, adding ~1,450 km/h to escape Earth orbit and set course for the Moon.",
     "thumbnail": "https://images-assets.nasa.gov/image/art001e002202/art001e002202~medium.jpg"
   },
   {
-    "id": "live-downlink-1",
-    "timestamp": "2026-04-03T02:24:00Z",
-    "name": "Live Crew Downlink",
-    "description": "First live video downlink event from the Orion spacecraft as it travels toward the Moon.",
+    "id": "downlink-day3",
+    "timestamp": "2026-04-03T20:43:00Z",
+    "name": "Live Crew Downlink — Day 3",
+    "description": "Live video communication with the crew as they coast toward the Moon. First public view of the crew in deep space.",
     "thumbnail": "https://images-assets.nasa.gov/image/iss064e007861/iss064e007861~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   },
   {
-    "id": "lunar-imaging",
-    "timestamp": "2026-04-05T01:40:00Z",
-    "name": "Lunar Imaging Operations",
-    "description": "The crew conducts lunar imaging for flyby operations.",
-    "thumbnail": "https://images-assets.nasa.gov/image/art001e002202/art001e002202~medium.jpg"
-  },
-  {
     "id": "outbound-correction-3",
     "timestamp": "2026-04-06T03:03:00Z",
-    "name": "Outbound Trajectory Correction Burn",
-    "description": "Orion performs its third outbound trajectory correction burn to fine-tune its path to the Moon.",
+    "name": "Outbound Trajectory Correction Burn 3",
+    "description": "Outbound trajectory correction burn 3 — 17.5 seconds. Refines Orion's path to the Moon.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20190711-PH_KLS01_0151/KSC-20190711-PH_KLS01_0151~medium.jpg"
   },
   {
-    "id": "lunar-sphere-entry",
+    "id": "lunar-sphere-influence",
     "timestamp": "2026-04-06T04:41:00Z",
     "name": "Enter Lunar Sphere of Influence",
-    "description": "The Orion spacecraft officially enters the Moon's sphere of influence.",
+    "description": "Orion enters the lunar sphere of influence — the Moon's gravity becomes the dominant force controlling the spacecraft's trajectory.",
     "thumbnail": "https://images-assets.nasa.gov/image/art001e002202/art001e002202~medium.jpg"
   },
   {
-    "id": "apollo-13-record",
-    "timestamp": "2026-04-06T17:56:00Z",
+    "id": "distance-record-surpass",
+    "timestamp": "2026-04-06T17:59:00Z",
     "name": "Apollo 13 Distance Record Broken",
-    "description": "The crew surpasses the record for human's farthest distance from Earth previously set by Apollo 13, at 248,655 miles.",
+    "description": "The crew surpasses the record for humans' farthest distance from Earth, previously set by Apollo 13 in 1970 at 248,655 miles.",
     "thumbnail": "https://images-assets.nasa.gov/image/as13-62-9004/as13-62-9004~medium.jpg"
   },
   {
-    "id": "loss-of-communications",
-    "timestamp": "2026-04-06T22:47:00Z",
+    "id": "far-side-blackout",
+    "timestamp": "2026-04-06T22:43:00Z",
     "name": "Loss of Communications (Blackout)",
-    "description": "Predicted loss of communications as the crew heads behind the far side of the Moon (estimated 40-min).",
+    "description": "Predicted loss of communications as crew heads behind the Moon. Approximately 40 minutes of blackout.",
     "thumbnail": "https://images-assets.nasa.gov/image/PIA19649/PIA19649~medium.jpg"
   },
   {
     "id": "closest-approach",
-    "timestamp": "2026-04-06T23:02:00Z",
-    "name": "Lunar Closest Approach",
-    "description": "Orion reaches its closest approach to the Moon during the flyby.",
+    "timestamp": "2026-04-06T23:01:00Z",
+    "name": "Lunar Closest Approach — 6545 km Above Surface",
+    "description": "Orion makes its closest approach to the Moon at 6545 km (4067 statute miles) above the surface.",
     "thumbnail": "https://images-assets.nasa.gov/image/art001e002202/art001e002202~medium.jpg"
   },
   {
-    "id": "max-distance",
-    "timestamp": "2026-04-06T23:05:00Z",
-    "name": "Maximum Distance from Earth",
-    "description": "Orion reaches its maximum distance from Earth during the mission.",
+    "id": "distance-record",
+    "timestamp": "2026-04-06T23:03:00Z",
+    "name": "Maximum Distance from Earth — 406,770 km",
+    "description": "Orion reaches maximum distance from Earth: 406,770 km (252,756 statute miles) — the farthest any humans have ever traveled.",
     "thumbnail": "https://images-assets.nasa.gov/image/art001e002202/art001e002202~medium.jpg"
   },
   {
-    "id": "solar-eclipse",
+    "id": "solar-eclipse-flyby",
     "timestamp": "2026-04-07T00:35:00Z",
-    "name": "Solar Eclipse Period",
-    "description": "Orion enters a period with the Moon eclipsing the Sun.",
+    "name": "Solar Eclipse from Lunar Orbit",
+    "description": "Solar eclipse from lunar orbit — the Sun passes behind the Moon from the crew's perspective. Lasts approximately 57 minutes.",
     "thumbnail": "https://images-assets.nasa.gov/image/PIA19649/PIA19649~medium.jpg"
   },
   {
     "id": "iss-call",
-    "timestamp": "2026-04-07T18:40:00Z",
-    "name": "Call with ISS Astronauts",
-    "description": "The Artemis II crew speaks with the astronauts aboard the International Space Station in an audio-only conversation.",
+    "timestamp": "2026-04-07T18:29:00Z",
+    "name": "Crew Speaks with ISS Astronauts",
+    "description": "Audio conversation between the Artemis II crew and astronauts aboard the International Space Station.",
     "thumbnail": "https://images-assets.nasa.gov/image/iss064e007861/iss064e007861~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   },
   {
     "id": "return-correction-1",
-    "timestamp": "2026-04-08T01:03:00Z",
-    "name": "Return Trajectory Correction Burn",
-    "description": "Orion performs its first return trajectory correction burn.",
+    "timestamp": "2026-04-08T00:04:00Z",
+    "name": "Return Trajectory Correction Burn 1",
+    "description": "First of three return course-correction burns to adjust Orion's path toward the re-entry corridor.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20190711-PH_KLS01_0151/KSC-20190711-PH_KLS01_0151~medium.jpg"
   },
   {
-    "id": "crew-news-conf",
-    "timestamp": "2026-04-09T22:10:00Z",
-    "name": "In-Orbit Crew News Conference",
-    "description": "The crew holds a live news conference from orbit.",
+    "id": "crew-press-conference",
+    "timestamp": "2026-04-09T21:59:00Z",
+    "name": "Crew News Conference from Space",
+    "description": "The Artemis II crew holds a press conference from deep space, answering questions from journalists on Earth.",
     "thumbnail": "https://images-assets.nasa.gov/image/iss064e007861/iss064e007861~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   },
   {
-    "id": "module-separation",
-    "timestamp": "2026-04-10T23:25:00Z",
-    "name": "Crew & Service Module Separation",
-    "description": "The Orion crew module separates from the European Service Module ahead of re-entry.",
+    "id": "esm-sep",
+    "timestamp": "2026-04-10T23:33:00Z",
+    "name": "Service Module Separation",
+    "description": "The European Service Module separates from the crew module at about 7:33 p.m. EDT, exposing Orion's heat shield for entry.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20221211-PH-KLS04-0052/KSC-20221211-PH-KLS04-0052~medium.jpg"
   },
   {
     "id": "splashdown",
     "timestamp": "2026-04-11T00:07:00Z",
-    "name": "Splashdown",
-    "description": "Splashdown in the Pacific Ocean. Recovery teams assist the crew out of Orion.",
+    "name": "Splashdown in Pacific Ocean",
+    "description": "Orion splashes down near San Diego at about 8:07 p.m. EDT. U.S. Navy recovery teams retrieve the crew and capsule.",
     "thumbnail": "https://images-assets.nasa.gov/image/KSC-20221211-PH-KLS04-0052/KSC-20221211-PH-KLS04-0052~medium.jpg",
-    "url": "https://www.nasa.gov/nasatv"
-  },
-  {
-    "id": "post-splashdown-conf",
-    "timestamp": "2026-04-11T02:35:00Z",
-    "name": "Post-Splashdown News Conference",
-    "description": "Post-splashdown news conference at NASA Johnson Space Center.",
-    "thumbnail": "https://images-assets.nasa.gov/image/NHQ202211160001/NHQ202211160001~medium.jpg",
     "url": "https://www.nasa.gov/nasatv"
   }
 ]

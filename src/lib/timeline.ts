@@ -73,6 +73,31 @@ export function getUpcomingMilestones(
   return milestones.filter((m) => m.metMs > metMs).slice(0, count);
 }
 
+export type UpcomingEvent =
+  | { kind: "milestone"; item: TimelineMilestone; timeMs: number }
+  | { kind: "activity"; item: TimelineActivity; timeMs: number };
+
+/**
+ * Returns up to `count` upcoming events (milestones and activities combined),
+ * sorted chronologically by their start/MET time.
+ */
+export function getUpcomingEvents(
+  metMs: number,
+  milestones: TimelineMilestone[],
+  activities: TimelineActivity[],
+  count: number,
+): UpcomingEvent[] {
+  const majorEvents: UpcomingEvent[] = milestones
+    .filter((m) => m.metMs > metMs)
+    .map((m) => ({ kind: "milestone", item: m, timeMs: m.metMs }));
+
+  const minorEvents: UpcomingEvent[] = activities
+    .filter((a) => a.startMetMs > metMs)
+    .map((a) => ({ kind: "activity", item: a, timeMs: a.startMetMs }));
+
+  return [...majorEvents, ...minorEvents].sort((a, b) => a.timeMs - b.timeMs).slice(0, count);
+}
+
 /**
  * Returns all activities and milestones from the Trans-Earth phase onwards,
  * sorted by start/MET time. Useful for the return-journey timeline view.
