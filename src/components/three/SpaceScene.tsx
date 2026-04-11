@@ -1,7 +1,7 @@
 "use client";
 
 import React, { type ComponentRef, useLayoutEffect, useRef } from "react";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { OrbitControls, Environment, useKTX2 } from "@react-three/drei";
 import { TOUCH, Vector3, EquirectangularReflectionMapping } from "three";
 import type {
@@ -16,6 +16,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useIsDesktop } from "@/hooks/useIsDesktop";
 import { computeFreeOrbitInitialOffset, getOrthographicEyeForView } from "@/lib/sceneCameraPresets";
 import { toScenePosition, EARTH_SCENE_RADIUS, latLonToSceneWorld } from "@/lib/sceneCoords";
+import { EARTH_RADIUS_KM } from "@/lib/horizons";
 import { greenwichMeanSiderealTime } from "@/lib/earthRotation";
 import {
   SPLASHDOWN_LAT_DEG,
@@ -110,6 +111,9 @@ function evaluateReentryHermite(
 const ORTHO_ZOOM_MOBILE = 1.15;
 const ORTHO_ZOOM_DESKTOP = ORTHO_ZOOM_MOBILE * 2.7;
 
+/** Minimum camera distance from Earth's centre — 100 m above the surface in scene units */
+const FREE_MIN_DISTANCE = EARTH_SCENE_RADIUS + (0.1 / EARTH_RADIUS_KM) * EARTH_SCENE_RADIUS;
+
 type OrbitControlsHandle = ComponentRef<typeof OrbitControls>;
 
 interface SpaceSceneProps {
@@ -160,128 +164,6 @@ function PointStars({ perspective }: { perspective: boolean }): React.JSX.Elemen
   );
 }
 
-/**
- * Draws the re-entry descent arc using a Hermite cubic spline.
- *
- * Start tangent  — the real incoming approach direction (prevPoint → lastPoint),
- *                  so the arc continues as a smooth extension of the trajectory.
- * End tangent    — radially inward at the splashdown site, simulating the near-
- *                  vertical parachute descent at the end of re-entry.
- * The curve is sampled into 20 points and passed to TrajectoryLine.
- *
- * Coordinate note: lastPoint is in the floating-origin frame; splashdownPos is in
- * scene world space and is shifted into the same frame here. Vectors from the
- * Earth centre equal the corresponding unshifted world-space coordinates because
- * the floating-origin shift cancels (lastPoint = origPt − origin, so
- * lastPoint + origin = origPt = vector from Earth centre at [0,0,0]).
- */
-function ReentryArc({
-  prevPoint,
-  lastPoint,
-  splashdownPos,
-  origin = [0, 0, 0],
-}: {
-  prevPoint?: ScenePoint | null;
-  lastPoint: ScenePoint;
-  splashdownPos: [number, number, number];
-  origin?: [number, number, number];
-}): React.JSX.Element | null {
-  const arcPoints = React.useMemo<ScenePoint[]>(() => {
-    const [lx, ly, lz] = lastPoint;
-    const [ox, oy, oz] = origin;
-    const [spx, spy, spz] = splashdownPos;
-
-    // Guard: entry point must be above the surface
-    const sX = lx + ox;
-    const sY = ly + oy;
-    const sZ = lz + oz;
-    if (Math.sqrt(sX * sX + sY * sY + sZ * sZ) < EARTH_SCENE_RADIUS) return [];
-
-    // --- Hermite control points in floating-origin frame ---
-    const p0x = lx,
-      p0y = ly,
-      p0z = lz;
-    const p1x = spx - ox,
-      p1y = spy - oy,
-      p1z = spz - oz;
-
-    // Chord length — used to scale both tangents for a well-proportioned curve
-    const cx = p1x - p0x,
-      cy = p1y - p0y,
-      cz = p1z - p0z;
-    const chord = Math.sqrt(cx * cx + cy * cy + cz * cz);
-    if (chord === 0) return [];
-
-    // Start tangent: incoming approach direction × 2 × chord.
-    // The ×2 scale makes the arc travel noticeably in the approach direction
-    // before beginning its turn, giving a smooth visual continuation.
-    let t0x: number, t0y: number, t0z: number;
-    if (prevPoint) {
-      const [pvx, pvy, pvz] = prevPoint;
-      const dvx = lx - pvx,
-        dvy = ly - pvy,
-        dvz = lz - pvz;
-      const dvLen = Math.sqrt(dvx * dvx + dvy * dvy + dvz * dvz);
-      if (dvLen > 0) {
-        t0x = (dvx / dvLen) * chord * 2;
-        t0y = (dvy / dvLen) * chord * 2;
-        t0z = (dvz / dvLen) * chord * 2;
-      } else {
-        // prevPoint coincides with lastPoint — fall through to radial fallback
-        t0x = (-sX / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
-        t0y = (-sY / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
-        t0z = (-sZ / Math.sqrt(sX * sX + sY * sY + sZ * sZ)) * chord * 2;
-      }
-    } else {
-      // No prevPoint: fall back to radially inward (approaching from deep space)
-      const sLen = Math.sqrt(sX * sX + sY * sY + sZ * sZ);
-      t0x = (-sX / sLen) * chord * 2;
-      t0y = (-sY / sLen) * chord * 2;
-      t0z = (-sZ / sLen) * chord * 2;
-    }
-
-    // End tangent: radially inward at splashdown (vertical parachute descent).
-    // splashdownPos is already in world space = vector from Earth centre.
-    const spLen = Math.sqrt(spx * spx + spy * spy + spz * spz);
-    const t1x = (-spx / spLen) * chord * 0.6;
-    const t1y = (-spy / spLen) * chord * 0.6;
-    const t1z = (-spz / spLen) * chord * 0.6;
-
-    // Sample 20 points along the Hermite cubic
-    const N = 20;
-    const pts: ScenePoint[] = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const t2 = t * t;
-      const t3 = t2 * t;
-      const h00 = 2 * t3 - 3 * t2 + 1;
-      const h10 = t3 - 2 * t2 + t;
-      const h01 = -2 * t3 + 3 * t2;
-      const h11 = t3 - t2;
-      pts.push([
-        h00 * p0x + h10 * t0x + h01 * p1x + h11 * t1x,
-        h00 * p0y + h10 * t0y + h01 * p1y + h11 * t1y,
-        h00 * p0z + h10 * t0z + h01 * p1z + h11 * t1z,
-      ]);
-    }
-    return pts;
-  }, [prevPoint, lastPoint, splashdownPos, origin]);
-
-  if (arcPoints.length < 2) return null;
-
-  return (
-    <TrajectoryLine
-      points={arcPoints}
-      color="#a03800"
-      opacity={0.5}
-      lineWidth={2}
-      dashed
-      dashSize={0.125}
-      gapSize={0.125}
-    />
-  );
-}
-
 interface SceneBodiesProps {
   view: SceneView;
   data: ArtemisData | null;
@@ -328,19 +210,17 @@ function SceneBodies({
   origin = [0, 0, 0],
   missionPhase,
 }: SceneBodiesProps): React.JSX.Element {
-  const isReentry =
-    missionPhase === "REENTRY" ||
-    missionPhase === "SPLASHDOWN_MOMENT" ||
-    missionPhase === "COMPLETE";
-
   const smSeparated = isServiceModuleSeparated(missionPhase ?? "OUTBOUND");
 
-  // Show the re-entry arc as a landing preview during the return leg and all later phases
-  const showReentryArc =
-    missionPhase === "RETURN" ||
-    missionPhase === "REENTRY" ||
-    missionPhase === "SPLASHDOWN_MOMENT" ||
-    missionPhase === "COMPLETE";
+  // When landed, orient the capsule radially outward from Earth centre
+  const surfaceNormal = React.useMemo<[number, number, number] | undefined>(() => {
+    if (missionPhase !== "COMPLETE" && missionPhase !== "SPLASHDOWN_MOMENT") return undefined;
+    const [ax, ay, az] = artemisPos;
+    const mag = Math.sqrt(ax * ax + ay * ay + az * az);
+    if (mag === 0) return undefined;
+    return [ax / mag, ay / mag, az / mag];
+  }, [missionPhase, artemisPos]);
+
   const shiftedEarthPos = React.useMemo<[number, number, number]>(
     () => [-origin[0], -origin[1], -origin[2]],
     [origin],
@@ -381,18 +261,6 @@ function SceneBodies({
     [plannedTrajectory, shiftTrajectory],
   );
 
-  const lastPlannedPoint = React.useMemo<ScenePoint | null>(() => {
-    const src = shiftedPlannedTrajectory ?? shiftedTrajectory;
-    if (!src || src.length === 0) return null;
-    return src[src.length - 1] ?? null;
-  }, [shiftedPlannedTrajectory, shiftedTrajectory]);
-
-  const prevPlannedPoint = React.useMemo<ScenePoint | null>(() => {
-    const src = shiftedPlannedTrajectory ?? shiftedTrajectory;
-    if (!src || src.length < 2) return null;
-    return src[src.length - 2] ?? null;
-  }, [shiftedPlannedTrajectory, shiftedTrajectory]);
-
   return (
     <>
       <ambientLight intensity={0.12} />
@@ -401,7 +269,7 @@ function SceneBodies({
         <StarmapEnvironment view={view} />
       </React.Suspense>
       {view !== "free" && <PointStars perspective={false} />}
-      <EarthMesh position={shiftedEarthPos} rotationAngle={earthRotationAngle} splashdownMarker />
+      <EarthMesh position={shiftedEarthPos} rotationAngle={earthRotationAngle} />
       <MoonMesh position={shiftedMoonPos} view={view} />
       {shiftedMoonTrajectory && (
         <TrajectoryLine points={shiftedMoonTrajectory} color="#aaaaaa" opacity={0.1} />
@@ -420,14 +288,6 @@ function SceneBodies({
       {shiftedPlannedTrajectory && (
         <TrajectoryLine points={shiftedPlannedTrajectory} color="#4488ff" opacity={0.55} />
       )}
-      {showReentryArc && lastPlannedPoint && (
-        <ReentryArc
-          prevPoint={prevPlannedPoint}
-          lastPoint={lastPlannedPoint}
-          splashdownPos={SPLASHDOWN_SCENE_POS}
-          origin={origin}
-        />
-      )}
       {data && (
         <React.Suspense fallback={null}>
           <OrionSpacecraft
@@ -435,7 +295,7 @@ function SceneBodies({
             velocity={data.spacecraft.velocity}
             view={view}
             showServiceModule={!smSeparated}
-            reentryGlow={isReentry}
+            {...(surfaceNormal !== undefined && { surfaceNormal })}
           />
         </React.Suspense>
       )}
@@ -635,6 +495,25 @@ function SceneContentsFree({
   }, [shiftedArtemisPos, origin, camera, data?.spacecraft.velocity]);
   /* eslint-enable react-hooks/immutability */
 
+  // Clamp the camera so it never descends below 100 m above Earth's surface.
+  // Priority -1 ensures this runs *after* OrbitControls' useFrame (priority 0),
+  // so our correction is not overwritten before the frame is rendered.
+  useFrame(({ camera }) => {
+    const earthX = -origin[0];
+    const earthY = -origin[1];
+    const earthZ = -origin[2];
+    const dx = camera.position.x - earthX;
+    const dy = camera.position.y - earthY;
+    const dz = camera.position.z - earthZ;
+    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    if (dist > 0 && dist < FREE_MIN_DISTANCE) {
+      const scale = FREE_MIN_DISTANCE / dist;
+      camera.position.x = earthX + dx * scale;
+      camera.position.y = earthY + dy * scale;
+      camera.position.z = earthZ + dz * scale;
+    }
+  }, -1);
+
   return (
     <>
       <SceneBodies
@@ -694,11 +573,16 @@ export function SpaceScene({
   const moonPos = toScenePosition({ x: moonX, y: moonY, z: moonZ });
   const artemisPos = toScenePosition({ x: craftX, y: craftY, z: craftZ });
 
-  // Tick at every animation frame during REENTRY so the synthetic position
-  // interpolates smoothly along the arc without waiting for a data refresh.
+  // Tick every frame during REENTRY (Hermite interpolation) and after splashdown
+  // (so the capsule tracks the splashdown site as Earth rotates in real time).
   const [nowMs, setNowMs] = React.useState<number>(() => Date.now());
   React.useEffect(() => {
-    if (missionPhase !== "REENTRY") return;
+    if (
+      missionPhase !== "REENTRY" &&
+      missionPhase !== "SPLASHDOWN_MOMENT" &&
+      missionPhase !== "COMPLETE"
+    )
+      return;
     let rafId: number;
     const tick = (): void => {
       setNowMs(Date.now());
@@ -710,10 +594,12 @@ export function SpaceScene({
 
   // After Horizons data ends (~23:54 UTC), interpolate the spacecraft marker
   // along the same Hermite arc drawn on screen. At SPLASHDOWN_MOMENT / COMPLETE
-  // snap it to the splashdown site so it doesn't stay frozen at entry interface.
+  // recompute the splashdown world position from the live GMST so the capsule
+  // tracks the splashdown site as Earth rotates.
   const effectiveArtemisPos = React.useMemo<[number, number, number]>(() => {
     if (missionPhase === "SPLASHDOWN_MOMENT" || missionPhase === "COMPLETE") {
-      return SPLASHDOWN_SCENE_POS;
+      const gmst = greenwichMeanSiderealTime(new Date(nowMs));
+      return latLonToSceneWorld(SPLASHDOWN_LAT_DEG, SPLASHDOWN_LON_DEG, EARTH_SCENE_RADIUS, gmst);
     }
     if (missionPhase !== "REENTRY") return artemisPos;
     if (nowMs <= HORIZONS_END_TIME.getTime()) return artemisPos;

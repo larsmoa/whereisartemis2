@@ -28,6 +28,11 @@ type OrionSpacecraftProps = React.JSX.IntrinsicElements["group"] & {
   showServiceModule?: boolean;
   /** When true, renders a pulsing plasma glow around the capsule (re-entry) */
   reentryGlow?: boolean;
+  /**
+   * When provided, orients the capsule so its top points along this unit vector
+   * (radially outward from Earth centre) and ignores velocity-based rotation.
+   */
+  surfaceNormal?: [number, number, number];
 };
 
 export function OrionSpacecraft({
@@ -36,6 +41,7 @@ export function OrionSpacecraft({
   view,
   showServiceModule = true,
   reentryGlow = false,
+  surfaceNormal,
   ...props
 }: OrionSpacecraftProps): React.JSX.Element {
   const { nodes, materials } = useGLTF(
@@ -51,7 +57,7 @@ export function OrionSpacecraft({
   const capsuleWidth = capsuleBox.max.x - capsuleBox.min.x;
   const normalizationFactor = 16 / capsuleWidth;
 
-  const fixedScale = view === "free" ? EARTH_SCENE_RADIUS * 0.0125 : 0.226 * 0.5;
+  const fixedScale = view === "free" ? EARTH_SCENE_RADIUS * 0.0025 : 0.226 * 0.1;
   const finalScale = fixedScale * normalizationFactor;
 
   // Clone GLTF materials so we can override envMapIntensity without mutating the shared asset
@@ -97,8 +103,14 @@ export function OrionSpacecraft({
     }
   });
 
-  // Calculate rotation based on velocity
+  // Calculate rotation: radially-up when on surface, velocity-based otherwise
   const rotation = useMemo(() => {
+    if (surfaceNormal) {
+      const radial = new THREE.Vector3(...surfaceNormal).normalize();
+      const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), radial);
+      return new THREE.Euler().setFromQuaternion(quat);
+    }
+
     if (!velocity || (velocity.x === 0 && velocity.y === 0 && velocity.z === 0)) {
       return new THREE.Euler();
     }
@@ -116,7 +128,7 @@ export function OrionSpacecraft({
     dummy.rotateY(reentryGlow ? Math.PI / 2 : -Math.PI / 2);
 
     return dummy.rotation;
-  }, [velocity, reentryGlow]);
+  }, [surfaceNormal, velocity, reentryGlow]);
 
   return (
     <group position={position} rotation={rotation} scale={finalScale} {...props} dispose={null}>
