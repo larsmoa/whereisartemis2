@@ -103,10 +103,12 @@ export const HORIZONS_START_TIME = new Date("2026-04-02T02:00:00Z");
 export const SPLASHDOWN_TIME = new Date("2026-04-10T23:55:00Z");
 
 /**
- * Last available Artemis II (-1024) data point in JPL Horizons.
- * Queries past this time return an error from the API.
+ * Safe upper bound for Artemis II (-1024) queries to JPL Horizons.
+ * The actual last data point is 2026-04-10T23:54:22Z, but fetchBody adds
+ * 60 s to derive the STOP_TIME, so the start must be at least 60 s earlier.
+ * Using 23:53:00 gives a window of 23:53:00–23:54:00, safely within range.
  */
-export const HORIZONS_END_TIME = new Date("2026-04-10T23:54:00Z");
+export const HORIZONS_END_TIME = new Date("2026-04-10T23:53:00Z");
 
 function buildHorizonsUrl(command: string, startTime: string, stopTime: string): string {
   const params = new URLSearchParams({

@@ -11,6 +11,11 @@ const HOURS_BACK = 72;
 
 const getCachedMoonTrajectory = unstable_cache(
   async (type: "past" | "future"): Promise<ScenePoint[]> => {
+    // Mission is over — no future moon trajectory needed past splashdown
+    if (type === "future" && new Date() >= SPLASHDOWN_TIME) {
+      return [];
+    }
+
     const now = new Date();
     let positions;
     if (type === "future") {

@@ -8,6 +8,11 @@ export const revalidate = 300;
 
 const getCachedTrajectory = unstable_cache(
   async (type: "past" | "future"): Promise<TrajectoryDataPoint[]> => {
+    // Mission is over — no future trajectory exists past splashdown
+    if (type === "future" && new Date() >= SPLASHDOWN_TIME) {
+      return [];
+    }
+
     let positions;
     if (type === "future") {
       positions = await fetchTrajectory("-1024", new Date(), SPLASHDOWN_TIME, "10m");
