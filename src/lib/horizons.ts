@@ -102,6 +102,12 @@ export const HORIZONS_START_TIME = new Date("2026-04-02T02:00:00Z");
 /** Latest available Artemis II ephemeris in JPL Horizons */
 export const SPLASHDOWN_TIME = new Date("2026-04-10T23:55:00Z");
 
+/**
+ * Last available Artemis II (-1024) data point in JPL Horizons.
+ * Queries past this time return an error from the API.
+ */
+export const HORIZONS_END_TIME = new Date("2026-04-10T23:54:00Z");
+
 function buildHorizonsUrl(command: string, startTime: string, stopTime: string): string {
   const params = new URLSearchParams({
     format: "json",
@@ -185,8 +191,11 @@ export async function fetchArtemisAndMoon(): Promise<{
   const now = new Date();
   now.setSeconds(Math.floor(now.getSeconds() / 30) * 30, 0);
 
+  // Cap spacecraft query time — Horizons ephemeris for Artemis II ends at HORIZONS_END_TIME
+  const spacecraftTime = now > HORIZONS_END_TIME ? new Date(HORIZONS_END_TIME) : now;
+
   const [spacecraft, moon, sun] = await Promise.all([
-    fetchBody("-1024", now),
+    fetchBody("-1024", spacecraftTime),
     fetchBody("301", now),
     // Sun (body 10) relative to Earth-center in J2000 ecliptic — used for day/night lighting
     fetchBody("10", now),
@@ -275,13 +284,10 @@ export async function fetchTrajectory(
 ): Promise<TrajectoryPoint[]> {
   const effectiveStop = stop ? new Date(stop) : new Date();
 
-  // Horizons ephemeris data for Artemis II (-1024) ends at 2026-04-10T23:54:30.3936Z.
+  // Horizons ephemeris data for Artemis II (-1024) ends at HORIZONS_END_TIME.
   // Cap the requested stop time to avoid 500 errors from the API.
-  if (command === "-1024") {
-    const HORIZONS_END_TIME = new Date("2026-04-10T23:54:00Z");
-    if (effectiveStop > HORIZONS_END_TIME) {
-      effectiveStop.setTime(HORIZONS_END_TIME.getTime());
-    }
+  if (command === "-1024" && effectiveStop > HORIZONS_END_TIME) {
+    effectiveStop.setTime(HORIZONS_END_TIME.getTime());
   }
 
   // Round dates to nearest 5 minutes to ensure cache hits (revalidate is 300s)
